@@ -4,7 +4,7 @@ name: Build & Release
 # the Windows exe and publishes it as a release automatically.
 on:
   push:
-    tags: ["release-*"]
+    tags: ["v*"]
 
 permissions:
   contents: write
