@@ -3,6 +3,18 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] — 2026-07-25
+
+### Fixed
+- **Hash calculator no longer truncates** SHA-256/SHA-512 — digests print as full,
+  copy-pasteable lines instead of an ellipsised table cell.
+
+### Added
+- A correctness test (`test_builtin_tools_produce_correct_output`) that drives a
+  sample of built-in tools with known inputs and asserts the output is right, not
+  just crash-free. Backed by a 29-tool correctness sweep (hashes, decoders, ciphers,
+  subnet/base/JSON utilities, breach lookup) — all passing.
+
 ## [0.5.0] — 2026-07-25
 
 ### Added

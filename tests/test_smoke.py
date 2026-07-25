@@ -106,6 +106,42 @@ def test_arsenal_payloads_are_loaded():
         assert isinstance(entry, tuple) and len(entry) == 3, f"bad msf entry: {name}"
 
 
+def test_builtin_tools_produce_correct_output():
+    """Drive a sample of pure-Python tools with known inputs and assert the
+    output is actually correct — not merely crash-free. Guards against silent
+    breakage (e.g. a hash column truncating, a decoder returning garbage).
+    """
+    from unittest import mock
+    from toolkit import utils, hashes, crypto, cryptotools, toolbox, passwords
+
+    def drive(fn, inputs):
+        it = iter(inputs)
+        ask = lambda *a, **k: (next(it, str(k.get("default", ""))))  # noqa: E731
+        with mock.patch("rich.prompt.Prompt.ask", side_effect=ask), \
+             mock.patch.object(utils.console, "input", side_effect=ask), \
+             mock.patch("builtins.input", side_effect=ask):
+            with utils.console.capture() as cap:
+                fn()
+        return cap.get().lower()
+
+    checks = [
+        (hashes.calculate, ["t", "abc"], "900150983cd24fb0d6963f7d28e17f72"),
+        (hashes.calculate, ["t", "abc"],
+         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"),  # full sha256
+        (crypto.multi_decode, ["aGVsbG8="], "hello"),
+        (crypto.rot_n, ["Uryyb", "13"], "hello"),
+        (cryptotools.morse_tool, ["d", ".... . .-.. .-.. ---"], "hello"),
+        (toolbox.subnet_calc, ["10.0.0.0/24"], "10.0.0.255"),
+    ]
+    for fn, inputs, expected in checks:
+        out = drive(fn, inputs)
+        assert expected.lower() in out, f"{fn.__name__}({inputs}) missing {expected!r}"
+
+    # the bundled top-1M list powers the breach check (skip if not present)
+    if passwords.bundled_wordlist():
+        assert "#1" in drive(passwords.breach_check, ["123456"])
+
+
 def test_catalog_tools_are_well_formed():
     from toolkit import catalog
     tools = catalog.all_tools()

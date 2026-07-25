@@ -69,7 +69,7 @@ def frame(rows: list) -> Image.Image:
 def s_home(cursor: str = "") -> list:
     return [
         *[(b, "grey") for b in BANNER], "",
-        ("  Ø nullsec v0.5.0  ·  39 modules · 287 tools  ·  authorized use only", "grey"),
+        ("  Ø nullsec v0.5.1  ·  39 modules · 287 tools  ·  authorized use only", "grey"),
         "",
         ("  RECON / OSINT      WEB / EXPLOIT      CRYPTO / STEGO      AI / UTILITIES", "cyan"),
         ("  1 Reconnaissance   5 Web              3 Crypto & Enc      A AI Assistant", "fg"),

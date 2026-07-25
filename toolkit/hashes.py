@@ -68,12 +68,12 @@ def calculate() -> None:
         data = p.read_bytes()
         label = p.name
 
-    table = Table(title=f"Digests of {label}")
-    table.add_column("Algorithm", style="bold")
-    table.add_column("Digest", style="green")
+    # Plain lines with soft_wrap so full hashes stay intact and copy-pasteable
+    # (a bordered table truncates or injects border chars into long digests).
+    console.print(f"\n[bold]Digests of {label}:[/]")
     for algo in ("md5", "sha1", "sha256", "sha512"):
-        table.add_row(algo, hashlib.new(algo, data).hexdigest())
-    console.print(table)
+        console.print(f"  [bold]{algo:<6}[/] [green]{hashlib.new(algo, data).hexdigest()}[/]",
+                      soft_wrap=True)
     pause()
 
 
