@@ -2,7 +2,10 @@ from __future__ import annotations
 
 import base64
 import shutil
+import socket
 import subprocess
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -41,6 +44,7 @@ class VPNServer:
     sessions: str
     uptime_ms: str
     config_b64: str
+    real_ping: float | None = None   # measured TCP latency from this machine (ms)
 
     @property
     def speed_mbps(self) -> float:
@@ -120,27 +124,84 @@ def _do_fetch() -> bool:
     return True
 
 
+# --- config parsing + real latency -----------------------------------------
+
+def _config_info(s: VPNServer) -> dict:
+    """Pull proto/port and the encryption (cipher/auth) out of the OpenVPN config."""
+    info = {"proto": "", "port": "", "cipher": "", "auth": ""}
+    try:
+        cfg = base64.b64decode(s.config_b64).decode("utf-8", "ignore")
+    except Exception:
+        return info
+    for line in cfg.splitlines():
+        line = line.strip()
+        if line.startswith("remote ") and not info["port"]:
+            parts = line.split()
+            if len(parts) >= 3:
+                info["port"] = parts[2]
+        elif line.startswith("proto ") and not info["proto"]:
+            info["proto"] = line.split()[1]
+        elif line.startswith("cipher ") and not info["cipher"]:
+            info["cipher"] = line.split()[1]
+        elif line.startswith("auth ") and not info["auth"]:
+            info["auth"] = line.split()[1]
+    return info
+
+
+def _tcp_ping(ip: str, ports: list[str], timeout: float = 2.5) -> float | None:
+    """Round-trip time (ms) of a TCP handshake to the server — the real latency
+    you'll see. Tries each port, returns the first that answers."""
+    for port in ports:
+        try:
+            start = time.monotonic()
+            with socket.create_connection((ip, int(port)), timeout=timeout):
+                return round((time.monotonic() - start) * 1000, 1)
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def measure_all(servers: list[VPNServer]) -> None:
+    """Measure real TCP latency to each server concurrently, filling real_ping."""
+    def _m(s: VPNServer) -> None:
+        ports = [p for p in (_config_info(s).get("port"), "443", "1194", "992") if p]
+        s.real_ping = _tcp_ping(s.ip, list(dict.fromkeys(ports)))
+    with ThreadPoolExecutor(max_workers=40) as pool:
+        list(pool.map(_m, servers))
+
+
 # --- display helpers --------------------------------------------------------
 
+def _ordered(servers: list[VPNServer]) -> list[VPNServer]:
+    """Sort by real ping (lowest first) once measured, otherwise by speed."""
+    if any(s.real_ping is not None for s in servers):
+        return sorted(servers, key=lambda s: (s.real_ping is None, s.real_ping or 1e9))
+    return sorted(servers, key=lambda s: s.speed, reverse=True)
+
+
 def _render(servers: list[VPNServer], title: str, limit: int = 40) -> None:
-    servers = sorted(servers, key=lambda s: s.speed, reverse=True)
+    servers = _ordered(servers)
     t = Table(title=f"{title} ({len(servers)})"
               + (f" — showing top {limit}" if len(servers) > limit else ""))
     t.add_column("#", justify="right", style="dim")
     t.add_column("Country", style="cyan")
     t.add_column("Host / IP", overflow="fold")
-    t.add_column("Ping", justify="right")
+    t.add_column("Your ping", justify="right", style="bold")
     t.add_column("Speed", justify="right", style="green")
     t.add_column("Sessions", justify="right")
     t.add_column("Uptime", justify="right", style="dim")
     for i, s in enumerate(servers[:limit]):
+        yours = f"{s.real_ping:.0f}ms" if s.real_ping is not None else "[dim]?[/]"
         t.add_row(str(i), f"{s.country} ({s.cc})", f"{s.host}  [dim]{s.ip}[/]",
-                  f"{s.ping}ms", f"{s.speed_mbps:.1f} Mbps", s.sessions, s.uptime_days)
+                  yours, f"{s.speed_mbps:.1f} Mbps", s.sessions, s.uptime_days)
     console.print(t)
+    if not any(s.real_ping is not None for s in servers):
+        console.print("[dim]Tip: run 'Measure real ping' to see the latency you'll "
+                      "actually get, sorted fastest-first.[/]")
 
 
 def _pick(servers: list[VPNServer], prompt: str = "Server #") -> VPNServer | None:
-    servers = sorted(servers, key=lambda s: s.speed, reverse=True)
+    servers = _ordered(servers)
     idx = Prompt.ask(prompt, default="0").strip()
     if not idx.isdigit() or not (0 <= int(idx) < len(servers)):
         console.print("[red]Invalid selection.[/]")
@@ -198,6 +259,27 @@ def countries() -> None:
     pause()
 
 
+def measure_ping() -> None:
+    header("Measure real ping", "Actual latency from YOU to each server (TCP handshake)")
+    if not _ensure():
+        return pause()
+    scope = _ordered(_servers)[:60]  # cap the probe to the 60 best by speed
+    console.print(f"[dim]Pinging {len(scope)} servers from your connection…[/]")
+    with console.status("[grey50]measuring latency…[/]", spinner="dots"):
+        measure_all(scope)
+    reachable = [s for s in scope if s.real_ping is not None]
+    if not reachable:
+        console.print("[yellow]None answered — your network may block outbound "
+                      "VPN ports. Try again or use a different server set.[/]")
+        return pause()
+    _render(reachable, "By real ping — lowest first")
+    best = min(reachable, key=lambda s: s.real_ping)
+    console.print(f"[green]Best:[/] {best.country} ({best.cc}) {best.host} — "
+                  f"[bold]{best.real_ping:.0f} ms[/], {best.speed_mbps:.0f} Mbps")
+    report("VPN", f"Measured ping; best {best.cc} {best.real_ping:.0f}ms")
+    pause()
+
+
 def details() -> None:
     header("Server details")
     if not _ensure():
@@ -206,12 +288,21 @@ def details() -> None:
     s = _pick(_servers)
     if not s:
         return pause()
+    info = _config_info(s)
+    if s.real_ping is None:
+        ports = [p for p in (info.get("port"), "443", "1194", "992") if p]
+        s.real_ping = _tcp_ping(s.ip, list(dict.fromkeys(ports)))
     console.print(f"\n[bold cyan]{s.host}[/]  [dim]{s.ip}[/]")
-    console.print(f"  Country : {s.country} ({s.cc})")
-    console.print(f"  Ping    : {s.ping} ms")
-    console.print(f"  Speed   : {s.speed_mbps:.1f} Mbps")
-    console.print(f"  Sessions: {s.sessions}   Uptime: {s.uptime_days}")
-    console.print(f"  Config  : {'yes' if s.config_b64 else 'no'} (OpenVPN)")
+    console.print(f"  Country    : {s.country} ({s.cc})")
+    console.print("  Your ping  : " + (f"{s.real_ping:.0f} ms" if s.real_ping is not None
+                                       else "[red]unreachable[/]")
+                  + f"   [dim](server-reported {s.ping} ms)[/]")
+    console.print(f"  Speed      : {s.speed_mbps:.1f} Mbps")
+    console.print(f"  Sessions   : {s.sessions}   Uptime: {s.uptime_days}")
+    console.print(f"  Encryption : {info.get('cipher') or 'AES-256-CBC (default)'} / "
+                  f"{info.get('auth') or 'SHA1'}")
+    console.print(f"  Transport  : {(info.get('proto') or 'udp').upper()} "
+                  f":{info.get('port') or '?'}")
     pause()
 
 
@@ -245,29 +336,51 @@ def export_config() -> None:
 
 
 def connect() -> None:
-    header("Connect via OpenVPN", "Launch OpenVPN with a server's config")
-    if shutil.which("openvpn") is None:
-        console.print("[yellow]OpenVPN isn't installed / on PATH.[/] Install it "
-                      "(openvpn.net) or use 'Export config' and connect manually.")
-        return pause()
+    header("Encrypt & connect (VPN tunnel)",
+           "Establish an encrypted OpenVPN tunnel through a chosen server")
     if not _ensure():
         return pause()
     _render(_servers, "Pick a server", limit=25)
     s = _pick(_servers)
     if not s:
         return pause()
+
+    # Surface the real ping and the actual tunnel encryption BEFORE committing.
+    info = _config_info(s)
+    if s.real_ping is None:
+        ports = [p for p in (info.get("port"), "443", "1194", "992") if p]
+        with console.status("[grey50]measuring latency…[/]", spinner="dots"):
+            s.real_ping = _tcp_ping(s.ip, list(dict.fromkeys(ports)))
+    cipher = info.get("cipher") or "AES-256-CBC (OpenVPN default)"
+    auth = info.get("auth") or "SHA1"
+    proto = (info.get("proto") or "udp").upper()
+    console.print(f"\n[bold cyan]{s.country} ({s.cc})[/]  {s.host}  [dim]{s.ip}[/]")
+    console.print("  Your ping  : " + (f"[bold]{s.real_ping:.0f} ms[/]"
+                  if s.real_ping is not None else "[red]unreachable[/]"))
+    console.print(f"  Encryption : [green]{cipher}[/] / {auth}  "
+                  "[dim](encrypted tunnel)[/]")
+    console.print(f"  Transport  : {proto} :{info.get('port') or '?'}   "
+                  f"Speed: {s.speed_mbps:.0f} Mbps")
+
     path = _write_config(s)
     if not path:
         return pause()
-    console.print(f"[yellow]This routes ALL your traffic through {s.country} "
-                  f"({s.ip}) — a volunteer relay. Ctrl+C to disconnect.[/]")
-    if Prompt.ask("Connect now?", choices=["y", "n"], default="n") != "y":
+    if shutil.which("openvpn") is None:
+        console.print(f"\n[yellow]OpenVPN isn't installed.[/] Config saved to "
+                      f"[cyan]{path}[/]. Install OpenVPN, then run:")
+        console.print(f"  [cyan]openvpn --config \"{path}\"[/]")
         return pause()
-    report("VPN", f"Connect {s.country} {s.ip}")
+
+    console.print(f"\n[yellow]Connecting routes ALL your traffic through this "
+                  f"volunteer relay in {s.country}. Ctrl+C to disconnect.[/]")
+    if Prompt.ask("Encrypt & connect now?", choices=["y", "n"], default="n") != "y":
+        console.print(f"[dim]Config kept at {path}.[/]")
+        return pause()
+    report("VPN", f"Tunnel {s.country} {s.ip} cipher={cipher}")
     try:
         subprocess.run(["openvpn", "--config", str(path)])
     except KeyboardInterrupt:
-        console.print("\n[dim]Disconnected.[/]")
+        console.print("\n[dim]Tunnel closed.[/]")
     except Exception as e:  # noqa: BLE001
         console.print(f"[red]OpenVPN failed: {e}[/]")
     pause()
@@ -277,8 +390,9 @@ MENU = {
     "1": ("Fetch / refresh free VPN list", refresh),
     "2": ("List servers (fastest first)", list_all),
     "3": ("Filter by country", by_country),
-    "4": ("Countries + server counts", countries),
-    "5": ("Server details", details),
-    "6": ("Export OpenVPN config (.ovpn)", export_config),
-    "7": ("Connect via OpenVPN", connect),
+    "4": ("Measure real ping (your latency)", measure_ping),
+    "5": ("Countries + server counts", countries),
+    "6": ("Server details + encryption", details),
+    "7": ("Export OpenVPN config (.ovpn)", export_config),
+    "8": ("Encrypt & connect (VPN tunnel)", connect),
 }

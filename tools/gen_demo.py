@@ -69,7 +69,7 @@ def frame(rows: list) -> Image.Image:
 def s_home(cursor: str = "") -> list:
     return [
         *[(b, "grey") for b in BANNER], "",
-        ("  Ø nullsec v2.4.0  ·  42 modules · 316 tools  ·  authorized use only", "grey"),
+        ("  Ø nullsec v2.4.1  ·  42 modules · 317 tools  ·  authorized use only", "grey"),
         "",
         ("  RECON / OSINT      WEB / EXPLOIT      CRYPTO / STEGO      AI / UTILITIES", "cyan"),
         ("  1 Reconnaissance   5 Web              3 Crypto & Enc      A AI Assistant", "fg"),
@@ -140,7 +140,7 @@ def s_utils() -> list:
 def s_end() -> list:
     return [
         *[(b, "grey") for b in BANNER], "",
-        ("  42 modules · 316 built-in tools · 1,000,000 passwords · authorized use only", "cyan"),
+        ("  42 modules · 317 built-in tools · 1,000,000 passwords · authorized use only", "cyan"),
         "",
         ("  github.com/fsiuhgshiqoih32/NullsecMultitools", "green"),
     ]

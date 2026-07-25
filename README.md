@@ -4,7 +4,7 @@
 
 # nullsec
 
-**A menu-driven offensive-security multitool — 42 modules and 316 built-in tools behind one prompt.**
+**A menu-driven offensive-security multitool — 42 modules and 317 built-in tools behind one prompt.**
 
 Recon · password cracking · crypto & cipher breaking · web/API testing · forensics · steganography · OSINT · evasion · payload generation — most of it pure Python with no setup.
 
@@ -30,7 +30,7 @@ up automatically once they're installed, **natively or through WSL**. Nothing is
 required to start: missing tools simply grey out their module and the built-in
 scanners/crackers keep working.
 
-- **42 modules · 316 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
+- **42 modules · 317 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
 - **Auto-install**: missing Python dependencies install themselves on first run; the AI tab can auto-install Ollama + a model
 - **Windows auto-setup**: on launch it elevates (one UAC prompt) and adds a Defender exclusion so the payload data isn't quarantined — the Payload Arsenal just works
 - **2,964** curated tools in the searchable catalog

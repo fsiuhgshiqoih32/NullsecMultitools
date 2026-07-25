@@ -3,6 +3,16 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.1] — 2026-07-25
+
+### Added (Free VPN)
+- **Real ping** — measures the actual TCP latency from your machine to each server
+  (VPNGate's own figure is the server's internal ping, not yours), sorts the list
+  fastest-first once measured, and shows it before you connect.
+- **Encrypted-tunnel details** — the connect/details views now parse and show the
+  tunnel's real cipher/auth and transport (e.g. AES-128-CBC / SHA1 over TCP:443)
+  before establishing the encrypted OpenVPN tunnel.
+
 ## [2.4.0] — 2026-07-25
 
 ### Added
