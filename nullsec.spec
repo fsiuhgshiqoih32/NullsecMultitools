@@ -15,8 +15,8 @@ TOOLKIT_MODULES = [
     'toolkit.mobile', 'toolkit.network', 'toolkit.osint', 'toolkit.passwords',
     'toolkit.payloadenc', 'toolkit.postex', 'toolkit.recipe', 'toolkit.recon',
     'toolkit.proxy', 'toolkit.reversing', 'toolkit.smb', 'toolkit.stego',
-    'toolkit.vulnscan', 'toolkit.web', 'toolkit.wireless', 'toolkit.wordlists',
-    'toolkit.workspace',
+    'toolkit.toolbox', 'toolkit.vpn', 'toolkit.vulnscan', 'toolkit.web',
+    'toolkit.wireless', 'toolkit.wordlists', 'toolkit.workspace',
 ]
 
 # Optional libraries the toolkit imports lazily (via need_lib / importlib), so

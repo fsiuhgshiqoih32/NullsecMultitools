@@ -33,7 +33,8 @@ from toolkit import (__version__, adattacks, ai, arsenal, bruteforce, catalog,
                      generators, hardware, hashes, installer, interceptor, iot,
                      lolbins, metadata, mobile, network, osint, passwords,
                      payloadenc, postex, recipe, recon, reversing, smb, stego,
-                     proxy, toolbox, vulnscan, web, wireless, wordlists, workspace)
+                     proxy, toolbox, vpn, vulnscan, web, wireless, wordlists,
+                     workspace)
 from toolkit.utils import (IS_WINDOWS, console, detect_tools, get_wsl_distro,
                            probe_tools, render_banner, report, resource_path,
                            wsl_available)
@@ -83,6 +84,7 @@ CATEGORIES = {
     "U": ("Utilities", toolbox.MENU, "Base/subnet/epoch/UUID/passgen/URL/entropy/JSON"),
     "W": ("Workspace", workspace.MENU, "Named engagements: persist findings, notes, reports"),
     "P": ("Proxy Manager", proxy.MENU, "Load, test, rotate, and export proxies"),
+    "V": ("Free VPN", vpn.MENU, "Fetch free VPNGate servers by country, export OpenVPN configs"),
 }
 
 # System pseudo-entries (handled specially, not real categories).
@@ -132,7 +134,7 @@ GROUPS = [
     ("FORENSICS / DFIR", "green", ["f", "e", "z"]),
     ("IOT / HARDWARE", "bright_magenta", ["I", "H"]),
     ("EVASION / DEFENSE", "green", ["E", "d"]),
-    ("AI / UTILITIES", "bright_cyan", ["A", "U", "W", "P"]),
+    ("AI / UTILITIES", "bright_cyan", ["A", "U", "W", "P", "V"]),
     ("SYSTEM", "blue", ["i", "r", "t", "q"]),
 ]
 

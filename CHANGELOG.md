@@ -3,6 +3,14 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.0] — 2026-07-25
+
+### Added
+- **Free VPN module** (`V`): fetches the public **VPNGate** pool of volunteer VPN
+  relays, filters by country, ranks by speed, exports an OpenVPN `.ovpn` config for
+  any server, and can launch OpenVPN to connect. Routes its fetch through the Proxy
+  Manager when enabled.
+
 ## [2.3.5] — 2026-07-25
 
 Version renumbered to reflect the project's maturity (41 modules, 309 tools,
