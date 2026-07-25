@@ -3,6 +3,14 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.2] — 2026-07-25
+
+### Added
+- **OpenVPN auto-install**: when you go to connect and OpenVPN isn't present, the
+  Free VPN module offers to install it automatically (winget on Windows, apt/dnf/
+  pacman on Linux, brew on macOS), then resolves the binary (including the standard
+  `C:\Program Files\OpenVPN\bin` location) and connects — no manual step.
+
 ## [2.4.1] — 2026-07-25
 
 ### Added (Free VPN)

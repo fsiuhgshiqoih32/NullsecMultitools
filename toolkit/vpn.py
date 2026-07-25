@@ -4,6 +4,7 @@ import base64
 import shutil
 import socket
 import subprocess
+import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -13,7 +14,7 @@ import requests
 from rich.prompt import Prompt
 from rich.table import Table
 
-from .utils import console, get_proxy, header, pause, report
+from .utils import IS_WINDOWS, console, get_proxy, header, pause, report
 
 try:  # VPNGate's cert is valid, but proxies/MITM can trip verification — quiet the noise
     requests.packages.urllib3.disable_warnings()
@@ -209,6 +210,80 @@ def _pick(servers: list[VPNServer], prompt: str = "Server #") -> VPNServer | Non
     return servers[int(idx)]
 
 
+# --- OpenVPN: locate / auto-install -----------------------------------------
+
+_WIN_OPENVPN_PATHS = [
+    r"C:\Program Files\OpenVPN\bin\openvpn.exe",
+    r"C:\Program Files (x86)\OpenVPN\bin\openvpn.exe",
+]
+
+
+def _openvpn_path() -> str | None:
+    """Resolve the openvpn binary from PATH or the usual install location."""
+    p = shutil.which("openvpn")
+    if p:
+        return p
+    if IS_WINDOWS:
+        for c in _WIN_OPENVPN_PATHS:
+            if Path(c).is_file():
+                return c
+    return None
+
+
+def _run_live(cmd: list, note: str) -> int:
+    console.print(f"[dim]$ {' '.join(cmd)}[/]  [bright_black]({note})[/]")
+    try:
+        return subprocess.call(cmd)
+    except FileNotFoundError:
+        console.print(f"[yellow]'{cmd[0]}' isn't available on this system.[/]")
+        return 127
+    except Exception as e:  # noqa: BLE001
+        console.print(f"[red]failed: {e}[/]")
+        return 1
+
+
+def _install_openvpn() -> str | None:
+    console.print("[bold]Installing OpenVPN…[/] [dim](this may take a minute)[/]")
+    if IS_WINDOWS:
+        if shutil.which("winget"):
+            _run_live(["winget", "install", "--id", "OpenVPNTechnologies.OpenVPN",
+                       "-e", "--silent", "--accept-package-agreements",
+                       "--accept-source-agreements"], "winget")
+        else:
+            console.print("[yellow]winget not found.[/] Get the installer from "
+                          "[cyan]https://openvpn.net/community-downloads/[/]")
+            return None
+    elif sys.platform == "darwin" and shutil.which("brew"):
+        _run_live(["brew", "install", "openvpn"], "homebrew")
+    elif shutil.which("apt"):
+        _run_live(["sudo", "apt", "install", "-y", "openvpn"], "apt")
+    elif shutil.which("dnf"):
+        _run_live(["sudo", "dnf", "install", "-y", "openvpn"], "dnf")
+    elif shutil.which("pacman"):
+        _run_live(["sudo", "pacman", "-S", "--noconfirm", "openvpn"], "pacman")
+    else:
+        console.print("[yellow]Install 'openvpn' with your package manager.[/]")
+        return None
+    return _openvpn_path()
+
+
+def ensure_openvpn() -> str | None:
+    """Return the openvpn path, offering to auto-install it if it's missing."""
+    p = _openvpn_path()
+    if p:
+        return p
+    console.print("[yellow]OpenVPN isn't installed.[/]")
+    if Prompt.ask("Auto-install OpenVPN now?", choices=["y", "n"], default="y") != "y":
+        return None
+    ovpn = _install_openvpn()
+    if ovpn:
+        console.print(f"[green]OpenVPN installed:[/] {ovpn}")
+    else:
+        console.print("[yellow]Couldn't confirm the OpenVPN install.[/] It may need a "
+                      "new terminal for PATH — reopen nullsec and try again.")
+    return ovpn
+
+
 # --- menu actions -----------------------------------------------------------
 
 def refresh() -> None:
@@ -365,20 +440,22 @@ def connect() -> None:
     path = _write_config(s)
     if not path:
         return pause()
-    if shutil.which("openvpn") is None:
-        console.print(f"\n[yellow]OpenVPN isn't installed.[/] Config saved to "
-                      f"[cyan]{path}[/]. Install OpenVPN, then run:")
-        console.print(f"  [cyan]openvpn --config \"{path}\"[/]")
+
+    ovpn = ensure_openvpn()  # auto-installs if missing
+    if ovpn is None:
+        console.print(f"\n[dim]Config saved at [cyan]{path}[/]. Once OpenVPN is "
+                      f"installed:[/]  [cyan]openvpn --config \"{path}\"[/]")
         return pause()
 
     console.print(f"\n[yellow]Connecting routes ALL your traffic through this "
-                  f"volunteer relay in {s.country}. Ctrl+C to disconnect.[/]")
+                  f"volunteer relay in {s.country}. Needs admin; Ctrl+C to "
+                  "disconnect.[/]")
     if Prompt.ask("Encrypt & connect now?", choices=["y", "n"], default="n") != "y":
         console.print(f"[dim]Config kept at {path}.[/]")
         return pause()
     report("VPN", f"Tunnel {s.country} {s.ip} cipher={cipher}")
     try:
-        subprocess.run(["openvpn", "--config", str(path)])
+        subprocess.run([ovpn, "--config", str(path)])
     except KeyboardInterrupt:
         console.print("\n[dim]Tunnel closed.[/]")
     except Exception as e:  # noqa: BLE001
