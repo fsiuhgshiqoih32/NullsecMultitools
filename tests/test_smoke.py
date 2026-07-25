@@ -161,6 +161,32 @@ def test_cipher_cores_survive_edge_inputs():
     assert C.crack_repeating_xor(ct)[2] == pt
 
 
+def test_vpn_write_config_handles_auth(tmp_path=None):
+    """Writing a VPNBook config (auth-user-pass) must inject the auth-file path
+    without choking on Windows backslashes in the regex replacement."""
+    import os
+    import tempfile
+    from toolkit import vpn
+
+    s = vpn.VPNServer(
+        host="us16.vpnbook.com", ip="us16.vpnbook.com", country="United States",
+        cc="US", ping="?", speed=0, sessions="-", uptime_ms="0",
+        config_b64=__import__("base64").b64encode(
+            b"client\nremote us16.vpnbook.com 443\nauth-user-pass\ncipher AES-256-GCM\n"
+        ).decode(),
+        source="vpnbook", username="vpnbook", password="secret123")
+    cwd = os.getcwd()
+    os.chdir(tempfile.mkdtemp())
+    try:
+        p = vpn._write_config(s)
+        assert p is not None and p.exists()
+        text = p.read_text(encoding="utf-8")
+        assert 'auth-user-pass "' in text          # path was injected
+        assert p.with_suffix(".auth").read_text().startswith("vpnbook\n")
+    finally:
+        os.chdir(cwd)
+
+
 def test_catalog_tools_are_well_formed():
     from toolkit import catalog
     tools = catalog.all_tools()

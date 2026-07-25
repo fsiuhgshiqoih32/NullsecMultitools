@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import shutil
 import socket
 import subprocess
@@ -54,7 +55,10 @@ class VPNServer:
     sessions: str
     uptime_ms: str
     config_b64: str
-    last_seen: float = 0.0            # epoch of the last fetch that returned it
+    source: str = "vpngate"          # "vpngate" | "vpnbook"
+    username: str = ""               # for auth-user-pass servers (VPNBook)
+    password: str = ""
+    last_seen: float = 0.0           # epoch of the last fetch that returned it
     real_ping: float | None = None   # measured TCP latency from this machine (ms)
 
     @property
@@ -142,10 +146,65 @@ def fetch() -> int:
     cache = {ip: d for ip, d in cache.items() if now - d.get("last_seen", 0) < _CACHE_TTL}
     _save_cache(cache)
 
+    # Second real source: VPNBook's curated free servers (US/CA/UK/DE/FR).
+    for s in _fetch_vpnbook():
+        d = asdict(s)
+        d.pop("real_ping", None)
+        cache[s.ip] = d
+        _fresh_count += 1
+    _save_cache(cache)
+
     _servers = [_server_from_cache(d) for d in cache.values()]
     if not text and not _servers:
         return -1
     return len(_servers)
+
+
+# --- second source: VPNBook (real US/CA/EU free servers) --------------------
+
+_VPNBOOK_PAGE = "https://www.vpnbook.com/freevpn/openvpn"
+_VPNBOOK_API = "https://www.vpnbook.com/api/openvpn"
+_CC_NAMES = {"US": "United States", "CA": "Canada", "UK": "United Kingdom",
+             "DE": "Germany", "FR": "France", "PL": "Poland", "SG": "Singapore"}
+_UA = {"User-Agent": "Mozilla/5.0"}
+
+
+def _fetch_vpnbook() -> list[VPNServer]:
+    """VPNBook publishes a handful of real, free OpenVPN servers (notably US and
+    Canada) behind a JSON API. Scrape the server list + shared creds, pull each
+    config. Best-effort: returns [] if the site format changes or it's offline."""
+    try:
+        html = requests.get(_VPNBOOK_PAGE, timeout=20, verify=False,
+                            proxies=get_proxy(), headers=_UA).text
+    except requests.RequestException:
+        return []
+    raw = html.replace('\\"', '"')
+    entries = re.findall(r'"id":"[a-z0-9]+","name":"[^"]+","hostname":"([a-z0-9.]+)"', raw)
+    codes = re.findall(r'<code[^>]*>([^<]+)</code>', html)
+    username = codes[0] if codes else "vpnbook"
+    password = codes[1] if len(codes) > 1 else ""
+    now = time.time()
+
+    def _one(hostname: str) -> VPNServer | None:
+        cc = (re.match(r'[a-z]+', hostname) or re.match("", "")).group(0).upper() if hostname else ""
+        try:
+            cfg = requests.get(_VPNBOOK_API, timeout=15, verify=False, headers=_UA,
+                               params={"hostname": hostname, "protocol": "tcp443"}).text
+        except requests.RequestException:
+            return None
+        if "remote " not in cfg or "BEGIN CERTIFICATE" not in cfg:
+            return None
+        return VPNServer(
+            host=hostname, ip=hostname, country=_CC_NAMES.get(cc, cc or "?"), cc=cc,
+            ping="?", speed=0, sessions="-", uptime_ms="0",
+            config_b64=base64.b64encode(cfg.encode()).decode(), source="vpnbook",
+            username=username, password=password, last_seen=now)
+
+    try:
+        with ThreadPoolExecutor(max_workers=10) as pool:
+            return [s for s in pool.map(_one, dict.fromkeys(entries)) if s]
+    except Exception:  # noqa: BLE001
+        return []
 
 
 def _ensure() -> bool:
@@ -167,12 +226,17 @@ def _do_fetch() -> bool:
         console.print("[yellow]No servers returned.[/]")
         return False
     ncc = len({s.cc for s in _servers})
+    vb = [s for s in _servers if s.source == "vpnbook"]
     console.print(f"[green]{_fresh_count} live this fetch[/] · "
                   f"[bold]{n} accumulated[/] across [bold]{ncc}[/] countries.")
+    if vb:
+        vbcc = ", ".join(sorted({s.cc for s in vb}))
+        console.print(f"[bold cyan]Includes {len(vb)} curated VPNBook servers[/] "
+                      f"({vbcc}) — real, connectable, incl. US/Canada. Shown first.")
     if n > _fresh_count:
-        console.print("[dim]The list grows each fetch as VPNGate rotates servers — "
-                      "run 'Measure real ping' to prune the ones that have gone offline.[/]")
-    report("VPN", f"VPNGate: {_fresh_count} live, {n} accumulated, {ncc} countries")
+        console.print("[dim]The VPNGate pool grows each fetch as it rotates — run "
+                      "'Measure real ping' to prune ones that have gone offline.[/]")
+    report("VPN", f"{_fresh_count} live, {n} accumulated, {ncc} countries, {len(vb)} VPNBook")
     return True
 
 
@@ -225,10 +289,11 @@ def measure_all(servers: list[VPNServer]) -> None:
 # --- display helpers --------------------------------------------------------
 
 def _ordered(servers: list[VPNServer]) -> list[VPNServer]:
-    """Sort by real ping (lowest first) once measured, otherwise by speed."""
+    """Sort by real ping once measured; otherwise curated VPNBook (US/CA/EU)
+    servers first, then VPNGate by speed."""
     if any(s.real_ping is not None for s in servers):
         return sorted(servers, key=lambda s: (s.real_ping is None, s.real_ping or 1e9))
-    return sorted(servers, key=lambda s: s.speed, reverse=True)
+    return sorted(servers, key=lambda s: (s.source != "vpnbook", -s.speed))
 
 
 def _render(servers: list[VPNServer], title: str, limit: int = 40) -> None:
@@ -419,11 +484,15 @@ def details() -> None:
         ports = [p for p in (info.get("port"), "443", "1194", "992") if p]
         s.real_ping = _tcp_ping(s.ip, list(dict.fromkeys(ports)))
     console.print(f"\n[bold cyan]{s.host}[/]  [dim]{s.ip}[/]")
-    console.print(f"  Country    : {s.country} ({s.cc})")
+    console.print(f"  Country    : {s.country} ({s.cc})   [dim]source: {s.source}[/]")
     console.print("  Your ping  : " + (f"{s.real_ping:.0f} ms" if s.real_ping is not None
                                        else "[red]unreachable[/]")
                   + f"   [dim](server-reported {s.ping} ms)[/]")
-    console.print(f"  Speed      : {s.speed_mbps:.1f} Mbps")
+    if s.username:
+        console.print(f"  Login      : [cyan]{s.username}[/] / [cyan]{s.password}[/]  "
+                      "[dim](shared VPNBook creds)[/]")
+    console.print(f"  Speed      : {s.speed_mbps:.1f} Mbps"
+                  + ("  [dim](VPNBook: unmetered)[/]" if s.source == "vpnbook" else ""))
     console.print(f"  Sessions   : {s.sessions}   Uptime: {s.uptime_days}")
     console.print(f"  Encryption : {info.get('cipher') or 'AES-256-CBC (default)'} / "
                   f"{info.get('auth') or 'SHA1'}")
@@ -438,8 +507,28 @@ def _write_config(s: VPNServer) -> Path | None:
     except Exception:
         console.print("[red]This server has no valid OpenVPN config.[/]")
         return None
-    out = Path.cwd() / f"vpngate_{s.cc}_{s.ip.replace('.', '-')}.ovpn"
-    out.write_bytes(data)
+    safe = re.sub(r"[^A-Za-z0-9.-]", "-", s.host or s.ip)
+    out = Path.cwd() / f"{s.source}_{s.cc}_{safe}.ovpn"
+    text = data.decode("utf-8", "ignore")
+    if s.username:
+        # VPNBook uses auth-user-pass; write the shared creds to a file and point
+        # the config at it so OpenVPN can connect without an interactive prompt.
+        auth = out.with_suffix(".auth")
+        auth.write_text(f"{s.username}\n{s.password}\n", encoding="utf-8")
+        # Point the config at the auth file. Rebuild line-by-line rather than
+        # re.sub, whose replacement string would mangle the Windows path's
+        # backslashes (e.g. \U in C:\Users -> 'bad escape').
+        lines = text.splitlines()
+        for i, ln in enumerate(lines):
+            if ln.strip().startswith("auth-user-pass"):
+                lines[i] = f'auth-user-pass "{auth}"'
+                break
+        out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        console.print(f"[dim]Auth (shared VPNBook creds):[/] "
+                      f"[cyan]{s.username}[/] / [cyan]{s.password}[/]  "
+                      f"[dim]-> {auth.name}[/]")
+    else:
+        out.write_bytes(data)
     return out
 
 

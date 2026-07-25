@@ -3,6 +3,19 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.4] — 2026-07-25
+
+### Added
+- **VPNBook as a second source — real US & Canada servers.** The Free VPN module
+  now also pulls VPNBook's curated free relays (US ×2, Canada ×2, UK, Germany,
+  France) with working AES-256-GCM OpenVPN configs, filling the North-American gap
+  VPNGate leaves. These are shown first, and export writes the shared credentials
+  into an auth file so `openvpn` connects non-interactively.
+
+### Fixed
+- Config writer no longer crashes on Windows when injecting the auth-file path
+  (the path's backslashes were mis-parsed as regex escapes).
+
 ## [2.4.3] — 2026-07-25
 
 ### Added
