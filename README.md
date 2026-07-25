@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/logo.png" alt="nullsec logo" width="170">
+
 # nullsec
 
 **A menu-driven offensive-security multitool — 37 modules and 271 built-in tools behind one prompt.**
@@ -35,6 +37,22 @@ scanners/crackers keep working.
 - **~60,900** exploit/template modules reachable once Exploit-DB, Nuclei, and Metasploit are installed
 - **71** ready-to-fill reverse/bind/web-shell payloads + msfvenom builders
 - Session reporting to Markdown/HTML, a CyberChef-style transform pipeline, and a WSL bridge for Linux-only tools
+
+---
+
+## Screenshots
+
+<div align="center">
+
+**Home** — every module one keystroke away
+
+<img src="docs/screenshot-home.svg" alt="nullsec home screen" width="760">
+
+**Modules & tools** — a module menu, and the Payload Arsenal building a reverse shell
+
+<img src="docs/screenshot-module.svg" alt="Hashes module menu" width="380">&nbsp;&nbsp;<img src="docs/screenshot-arsenal.svg" alt="Payload Arsenal reverse shell" width="380">
+
+</div>
 
 ---
 

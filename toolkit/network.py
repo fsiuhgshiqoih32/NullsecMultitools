@@ -99,7 +99,7 @@ def ping_sweep() -> None:
 def _reverse_dns(ip: str) -> str:
     try:
         return socket.gethostbyaddr(ip)[0]
-    except (socket.herror, socket.gaierror):
+    except OSError:
         return "-"
 
 

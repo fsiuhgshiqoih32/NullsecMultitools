@@ -34,6 +34,7 @@ from toolkit.utils import (IS_WINDOWS, console, detect_tools, get_wsl_distro,
                            wsl_available)
 
 BANNER = render_banner("nullsec")
+BANNER_STYLE = "grey70"  # calm grey wordmark; renders cleanly on any terminal
 
 CATEGORIES = {
     "1": ("Reconnaissance", recon.MENU, "Resolve hosts, scan ports, hand off to nmap"),
@@ -198,9 +199,10 @@ def _module_matches(term: str) -> list[tuple[str, str, str, str]]:
 
 def show_home() -> None:
     console.clear()
-    console.print(Text(BANNER.rstrip("\n"), style="bold green"))
-    console.print(f"[bright_black]  v{__version__} · {len(CATEGORIES)} modules · "
-                  f"{_total_tools()} tools · by anonymous[/]")
+    console.print(Text(BANNER.rstrip("\n"), style=BANNER_STYLE))
+    console.print(f"  [white]Ø[/] [bold grey85]nullsec[/] [grey50]v{__version__}[/]"
+                  f"  [grey42]·[/]  [grey62]{len(CATEGORIES)} modules · "
+                  f"{_total_tools()} tools[/]  [grey42]·[/]  [grey50]authorized use only[/]")
     console.print()
     console.print(Columns([_group_block(*g) for g in GROUPS], padding=(1, 4)))
     recent = [k for k in _load_recent() if k in CATEGORIES]
@@ -352,8 +354,8 @@ def run_category(key: str, name: str, menu: dict) -> str | None:
     modid = name.split()[0].lower()
     while True:
         console.clear()
-        console.print(Text(BANNER.rstrip("\n"), style="bold green"))
-        console.print(f"\n  [bold green]{name}[/]\n")
+        console.print(Text(BANNER.rstrip("\n"), style=BANNER_STYLE))
+        console.print(f"\n  [white]Ø[/] [bold grey85]{name}[/]\n")
         for k, (label, _fn) in menu.items():
             console.print(f"    [cyan]{k:>2}[/]  {label}")
         console.print("    [cyan] b[/]  [bright_black]back[/]   "

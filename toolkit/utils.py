@@ -27,26 +27,30 @@ IS_LINUX = platform.system() == "Linux"
 
 # --- ASCII banner -----------------------------------------------------------
 
-# Hardcoded fallback (pure ASCII, safe on any console) if pyfiglet is missing.
+# Hardcoded fallback if pyfiglet is missing. Pure ASCII (no Unicode block/box
+# glyphs), so it renders identically on any terminal font or code page.
 _FALLBACK_BANNER = r"""
- ███╗   ██╗██╗   ██╗██╗     ██╗     ███████╗███████╗ ██████╗
-████╗  ██║██║   ██║██║     ██║     ██╔════╝██╔════╝██╔════╝
-██╔██╗ ██║██║   ██║██║     ██║     ███████╗█████╗  ██║
-██║╚██╗██║██║   ██║██║     ██║     ╚════██║██╔══╝  ██║
-██║ ╚████║╚██████╔╝███████╗███████╗███████║███████╗╚██████╗
-╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝╚══════╝ ╚═════╝
+                ____
+   ____  __  __/ / /_______  _____
+  / __ \/ / / / / / ___/ _ \/ ___/
+ / / / / /_/ / / (__  )  __/ /__
+/_/ /_/\__,_/_/_/____/\___/\___/
 """
 
 
 def render_banner(text: str = "nullsec") -> str:
-    """Big ASCII banner via pyfiglet; degrade gracefully if it's unavailable."""
+    """Big ASCII banner via pyfiglet; degrade gracefully if it's unavailable.
+
+    Uses the pure-ASCII 'slant' font — the Unicode-block fonts (ansi_shadow)
+    look broken on terminals whose font lacks those box-drawing glyphs.
+    """
     try:
         import pyfiglet
 
         try:
-            return pyfiglet.figlet_format(text, font="ansi_shadow")
-        except Exception:
             return pyfiglet.figlet_format(text, font="slant")
+        except Exception:
+            return pyfiglet.figlet_format(text, font="standard")
     except Exception:
         return _FALLBACK_BANNER
 

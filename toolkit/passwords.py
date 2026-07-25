@@ -105,7 +105,8 @@ def wordlist_gen() -> None:
 
 
 def _leet(s: str) -> str:
-    return s.translate(str.maketrans("aoeiAOEI", "@0315@031"))
+    # leetspeak substitution — both args must be equal length for maketrans
+    return s.translate(str.maketrans("aoeisAOEIS", "@0315@0315"))
 
 
 def cupp_profiler() -> None:
