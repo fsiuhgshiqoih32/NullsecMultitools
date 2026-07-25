@@ -142,6 +142,25 @@ def test_builtin_tools_produce_correct_output():
         assert "#1" in drive(passwords.breach_check, ["123456"])
 
 
+def test_cipher_cores_survive_edge_inputs():
+    """Cipher breakers/transposers must not crash on short or degenerate input
+    (regression: Vigenere < 6 letters, rail fence with < 2 rails)."""
+    from toolkit import cryptotools as C
+
+    for ct in ("", "A", "AB", "HELLO", "LXFOPVEFRNHR"):
+        C.crack_vigenere(ct)  # must not raise
+    for rails in (0, 1, 2, 3):
+        C._rail_encode("HELLO", rails)
+        C._rail_decode("HELLO", rails)
+    # rail fence still round-trips for valid rails
+    assert C._rail_decode(C._rail_encode("HELLOWORLD", 3), 3) == "HELLOWORLD"
+    # repeating-key XOR recovers a known key
+    key = b"KEY"
+    pt = b"attack at dawn from the north ridge before sunrise today"
+    ct = bytes(c ^ key[i % 3] for i, c in enumerate(pt))
+    assert C.crack_repeating_xor(ct)[2] == pt
+
+
 def test_catalog_tools_are_well_formed():
     from toolkit import catalog
     tools = catalog.all_tools()

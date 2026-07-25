@@ -84,8 +84,10 @@ def _read_bytes(prompt: str) -> bytes | None:
         return None
 
 
-def _solve_xor_keysize(data: bytes, ks: int) -> tuple[bytes, bytes, float]:
-    """Solve each column as single-byte XOR; return (key, plaintext, score)."""
+def _solve_xor_keysize(data: bytes, ks: int) -> tuple[bytes, bytes]:
+    """Solve each column as single-byte XOR; return (key, plaintext)."""
+    if ks < 1:
+        return b"", data
     key = bytearray()
     for col in range(ks):
         column = data[col::ks]
@@ -152,7 +154,10 @@ def crack_vigenere(text: str) -> tuple[str, str]:
         avg = sum(ioc(c) for c in cols) / klen
         scored.append((klen, avg))
     good = [k for k, a in scored if a >= 0.06]
-    best_len = min(good) if good else max(scored, key=lambda x: x[1])[0]
+    # scored is empty for very short ciphertext (< 6 letters); fall back to a
+    # single-shift (Caesar-like) key rather than crashing on max([]).
+    best_len = min(good) if good else (
+        max(scored, key=lambda x: x[1])[0] if scored else 1)
 
     key = []
     for i in range(best_len):
@@ -228,7 +233,13 @@ def rail_fence() -> None:
     header("Rail fence cipher", "Zig-zag transposition")
     mode = Prompt.ask("[e]ncode or [d]ecode", choices=["e", "d"], default="e")
     s = Prompt.ask("Text")
-    rails = int(Prompt.ask("Rails", default="3"))
+    try:
+        rails = int(Prompt.ask("Rails", default="3"))
+    except ValueError:
+        rails = 3
+    if rails < 2:
+        console.print("[yellow]Rails must be 2 or more.[/]")
+        return pause()
     if mode == "e":
         console.print(f"[green]{_rail_encode(s, rails)}[/]")
     else:
@@ -249,6 +260,8 @@ def _rail_pattern(n, rails):
 
 
 def _rail_encode(s, rails):
+    if rails < 2 or not s:
+        return s  # 0/1 rails (or empty) is the identity — nothing to zig-zag
     rows = [""] * rails
     for ch, r in zip(s, _rail_pattern(len(s), rails)):
         rows[r] += ch
@@ -256,6 +269,8 @@ def _rail_encode(s, rails):
 
 
 def _rail_decode(s, rails):
+    if rails < 2 or not s:
+        return s
     pat = _rail_pattern(len(s), rails)
     counts = Counter(pat)
     idx, rows = 0, {}

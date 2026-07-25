@@ -3,6 +3,19 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] — 2026-07-25
+
+### Fixed (found in a 5-pass code scan)
+- **Vigenere breaker** crashed (`max() arg is an empty sequence`) on any ciphertext
+  with fewer than 6 letters; now falls back to a single-shift key.
+- **Rail fence** crashed (IndexError/KeyError) on fewer than 2 rails; the cores now
+  treat 0/1 rails as identity, and the menu validates the input.
+- Hardened `_solve_xor_keysize` against a `ks=0` divide-by-zero and corrected its
+  return-type annotation (returns 2 values, not 3).
+- API fuzzer read the *entire* parameter wordlist (and leaked the file handle) just
+  to take 50 entries; now streams and closes properly.
+- Added cipher edge-case regression tests.
+
 ## [0.6.0] — 2026-07-25
 
 ### Added

@@ -598,7 +598,13 @@ def api_fuzzer() -> None:
     params = ["id", "user", "admin", "debug", "test", "callback", "redirect",
               "url", "file", "path", "cmd", "exec", "query", "search", "filter"]
     if wordlist and os.path.exists(wordlist):
-        params = [l.strip() for l in open(wordlist) if l.strip()][:50]
+        params = []
+        with open(wordlist, encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if line.strip():
+                    params.append(line.strip())
+                    if len(params) >= 50:
+                        break
     console.print(f"[cyan]Fuzzing {len(params)} parameters on {url}[/]\n")
     for p in params:
         try:
