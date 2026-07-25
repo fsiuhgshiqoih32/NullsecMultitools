@@ -33,7 +33,7 @@ from toolkit import (__version__, adattacks, ai, arsenal, bruteforce, catalog,
                      generators, hardware, hashes, installer, interceptor, iot,
                      lolbins, metadata, mobile, network, osint, passwords,
                      payloadenc, postex, recipe, recon, reversing, smb, stego,
-                     vulnscan, web, wireless, wordlists)
+                     toolbox, vulnscan, web, wireless, wordlists)
 from toolkit.utils import (IS_WINDOWS, console, detect_tools, get_wsl_distro,
                            probe_tools, render_banner, report, resource_path,
                            wsl_available)
@@ -80,6 +80,7 @@ CATEGORIES = {
     "I": ("IoT / ICS / SCADA", iot.MENU, "BACnet, ZigBee, Z-Wave, WiFi deauth, VLAN hop, VoIP"),
     "H": ("Hardware / Physical", hardware.MENU, "BadUSB, Bluetooth, ATM, camera hijack, vishing"),
     "A": ("AI Assistant", ai.MENU, "LLM help: chat, explain, suggest, analyze (Ollama/OpenAI)"),
+    "U": ("Utilities", toolbox.MENU, "Base/subnet/epoch/UUID/passgen/URL/entropy/JSON"),
 }
 
 # System pseudo-entries (handled specially, not real categories).
@@ -129,7 +130,7 @@ GROUPS = [
     ("FORENSICS / DFIR", "green", ["f", "e", "z"]),
     ("IOT / HARDWARE", "bright_magenta", ["I", "H"]),
     ("EVASION / DEFENSE", "green", ["E", "d"]),
-    ("AI", "bright_cyan", ["A"]),
+    ("AI / UTILITIES", "bright_cyan", ["A", "U"]),
     ("SYSTEM", "blue", ["i", "r", "t", "q"]),
 ]
 
@@ -447,6 +448,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
+    # Auto-elevate on Windows (one UAC prompt), then repair the environment
+    # (Defender exclusion so payload data stops being quarantined). Kept out of
+    # module scope so importing `main` for tests/CI never triggers a UAC prompt.
+    from toolkit import elevate
+    if elevate.maybe_elevate():
+        sys.exit(0)  # a new elevated instance took over; this one is done
+    elevate.auto_fix()
     try:
         main()
     except (KeyboardInterrupt, EOFError):

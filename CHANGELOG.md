@@ -3,6 +3,18 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [0.4.0] — 2026-07-25
+
+### Added
+- **Auto-elevate to Administrator** on Windows (one UAC prompt), then **auto-add a
+  Windows Defender exclusion** for the app folder so the payload data files
+  (`arsenal.dat` / `gen_arsenal.py`) stop getting quarantined — the main reason the
+  Payload Arsenal "didn't work" on Windows. Self-heals quarantined files afterwards.
+  Opt out with `NULLSEC_NO_ELEVATE=1`; no-op on Linux/macOS.
+- **Utilities module** (`U`): base converter, subnet/CIDR calculator, epoch
+  timestamp converter, UUID generator, secure password generator, URL dissector,
+  text stats + Shannon entropy, and JSON validate/pretty-print. 8 pure-Python tools.
+
 ## [0.3.1] — 2026-07-25
 
 ### Changed
