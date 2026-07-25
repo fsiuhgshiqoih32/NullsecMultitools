@@ -18,6 +18,7 @@ install_win.log
 # runtime state
 data/state.json
 data/ai_config.json
+data/vpn_cache.json
 
 # workspace engagement data
 workspaces/

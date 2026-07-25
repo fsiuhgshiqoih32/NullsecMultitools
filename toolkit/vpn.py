@@ -1,20 +1,29 @@
 from __future__ import annotations
 
 import base64
+import json
 import shutil
 import socket
 import subprocess
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
 import requests
 from rich.prompt import Prompt
 from rich.table import Table
 
-from .utils import IS_WINDOWS, console, get_proxy, header, pause, report
+from .utils import (IS_WINDOWS, console, get_proxy, header, pause, report,
+                    resource_path)
+
+# Accumulate every server we've ever seen (VPNGate rotates its ~100-server
+# response, so the pool grows and diversifies across fetches). Persisted to a
+# writable path; frozen builds can't write inside the bundle.
+_CACHE_FILE = (Path("data", "vpn_cache.json") if hasattr(sys, "_MEIPASS")
+               else resource_path("data", "vpn_cache.json"))
+_CACHE_TTL = 21 * 86400  # forget servers not seen for 21 days
 
 try:  # VPNGate's cert is valid, but proxies/MITM can trip verification — quiet the noise
     requests.packages.urllib3.disable_warnings()
@@ -45,6 +54,7 @@ class VPNServer:
     sessions: str
     uptime_ms: str
     config_b64: str
+    last_seen: float = 0.0            # epoch of the last fetch that returned it
     real_ping: float | None = None   # measured TCP latency from this machine (ms)
 
     @property
@@ -63,14 +73,40 @@ class VPNServer:
 
 
 _servers: list[VPNServer] = []
+_fresh_count: int = 0   # how many of _servers came from the most recent fetch
+
+
+# --- persistent cache -------------------------------------------------------
+
+def _load_cache() -> dict:
+    try:
+        return json.loads(_CACHE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
+def _save_cache(cache: dict) -> None:
+    try:
+        _CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        _CACHE_FILE.write_text(json.dumps(cache), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _server_from_cache(d: dict) -> VPNServer:
+    valid = {f.name for f in fields(VPNServer)}
+    s = VPNServer(**{k: v for k, v in d.items() if k in valid})
+    s.real_ping = None  # a stale measurement means nothing
+    return s
 
 
 # --- fetching ---------------------------------------------------------------
 
 def fetch() -> int:
-    """Download and parse the VPNGate server list. Returns count. Routes through
-    the Proxy Manager if it's enabled."""
-    global _servers
+    """Fetch the VPNGate list and merge it into the running cache. Returns the
+    total number of accumulated servers (or -1 on a network failure with an empty
+    cache). Routes through the Proxy Manager if it's enabled."""
+    global _servers, _fresh_count
     text = ""
     for url in _MIRRORS:
         try:
@@ -80,10 +116,10 @@ def fetch() -> int:
                 break
         except requests.RequestException:
             continue
-    if not text:
-        return -1  # network failure (distinct from "0 servers")
 
-    out: list[VPNServer] = []
+    cache = _load_cache()
+    now = time.time()
+    _fresh_count = 0
     for line in text.splitlines():
         if not line or line[0] in "*#":
             continue
@@ -91,14 +127,25 @@ def fetch() -> int:
         if len(c) <= _CFG or not c[_H] or not c[_IP]:
             continue
         try:
-            out.append(VPNServer(
-                host=c[_H], ip=c[_IP], country=c[_CLONG], cc=c[_CSHORT].upper(),
-                ping=c[_PING], speed=int(c[_SPEED] or 0), sessions=c[_SESS],
-                uptime_ms=c[_UPTIME], config_b64=c[_CFG]))
+            s = VPNServer(host=c[_H], ip=c[_IP], country=c[_CLONG],
+                          cc=c[_CSHORT].upper(), ping=c[_PING],
+                          speed=int(c[_SPEED] or 0), sessions=c[_SESS],
+                          uptime_ms=c[_UPTIME], config_b64=c[_CFG], last_seen=now)
         except (ValueError, IndexError):
             continue
-    _servers = out
-    return len(out)
+        d = asdict(s)
+        d.pop("real_ping", None)
+        cache[s.ip] = d
+        _fresh_count += 1
+
+    # forget servers that haven't appeared in a long time
+    cache = {ip: d for ip, d in cache.items() if now - d.get("last_seen", 0) < _CACHE_TTL}
+    _save_cache(cache)
+
+    _servers = [_server_from_cache(d) for d in cache.values()]
+    if not text and not _servers:
+        return -1
+    return len(_servers)
 
 
 def _ensure() -> bool:
@@ -119,9 +166,13 @@ def _do_fetch() -> bool:
     if n == 0:
         console.print("[yellow]No servers returned.[/]")
         return False
-    console.print(f"[green]Fetched {n} free VPN servers[/] across "
-                  f"{len({s.cc for s in _servers})} countries.")
-    report("VPN", f"Fetched {n} VPNGate servers")
+    ncc = len({s.cc for s in _servers})
+    console.print(f"[green]{_fresh_count} live this fetch[/] · "
+                  f"[bold]{n} accumulated[/] across [bold]{ncc}[/] countries.")
+    if n > _fresh_count:
+        console.print("[dim]The list grows each fetch as VPNGate rotates servers — "
+                      "run 'Measure real ping' to prune the ones that have gone offline.[/]")
+    report("VPN", f"VPNGate: {_fresh_count} live, {n} accumulated, {ncc} countries")
     return True
 
 

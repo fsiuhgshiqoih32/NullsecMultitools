@@ -3,6 +3,15 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.3] — 2026-07-25
+
+### Added
+- **VPN server accumulation**: each VPNGate fetch now merges into a persistent
+  cache instead of replacing the list. Because VPNGate rotates its ~100-server
+  response over time, the pool and its country coverage grow with repeated fetches;
+  servers unseen for 21 days are dropped, and "Measure real ping" prunes the ones
+  that have gone offline. The fetch summary shows live-this-fetch vs. total.
+
 ## [2.4.2] — 2026-07-25
 
 ### Added
