@@ -1,0 +1,41 @@
+# caches
+__pycache__/
+*.pyc
+.venv/
+.venv-tools/
+
+# pyinstaller build artifacts
+build/
+dist/
+# ignore auto-generated .spec files, but keep our hand-maintained build recipe
+*.spec
+!nullsec.spec
+
+# install logs
+install.log
+install_win.log
+
+# runtime state
+data/state.json
+
+# generated session output
+*_report_*.md
+*_report_*.html
+generated_wordlist.txt
+mutated_wordlist.txt
+usernames.txt
+keyboard_walks.txt
+pins_*.txt
+profile_wordlist.txt
+combined_wordlist.txt
+dates_*.txt
+typosquat_*.txt
+iocs.txt
+
+# tool output dirs / stego artifacts
+carved/
+extracted/
+*_bound.*
+*_stego.*
+*_clean.*
+stego_whitespace.txt

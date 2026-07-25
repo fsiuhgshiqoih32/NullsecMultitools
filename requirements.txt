@@ -1,0 +1,17 @@
+# nullsec dependencies
+#
+# Core (required): the app will not start without these.
+rich>=13.0
+requests>=2.28
+
+# Recommended: draws the big ASCII banner (falls back to plain ASCII if absent).
+pyfiglet>=0.8
+
+# Optional extras: unlock extra tools. Everything degrades gracefully when a
+# given library is missing -- the tool just prints a one-line install hint.
+#   cryptography -> AES/RSA lab, x509 certificate parsing
+#   pillow       -> PNG/JPEG steganography + EXIF/GPS reading
+#   dnspython    -> richer DNS (MX/TXT/DNSSEC) lookups
+cryptography>=41.0
+pillow>=10.0
+dnspython>=2.4
