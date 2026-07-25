@@ -1,0 +1,10 @@
+# Keep data files byte-for-byte (no CRLF conversion) so lookups and the base64
+# payload blob stay intact across platforms.
+wordlists/top-1million-passwords.txt -text
+toolkit/arsenal.dat -text
+
+# Binary assets — never touch line endings.
+*.gif binary
+*.png binary
+*.ico binary
+*.svg -text

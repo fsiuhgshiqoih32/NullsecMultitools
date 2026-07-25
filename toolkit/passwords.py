@@ -6,7 +6,7 @@ from pathlib import Path
 from rich.prompt import Prompt
 from rich.table import Table
 
-from .utils import console, header, pause
+from .utils import bundled_wordlist, console, header, pause, report
 
 # A tiny sample of the most-common passwords, for an offline "is this awful?" check.
 COMMON = {
@@ -14,6 +14,42 @@ COMMON = {
     "1234567", "111111", "1234567890", "123123", "abc123", "password1",
     "iloveyou", "admin", "welcome", "monkey", "letmein", "dragon", "hunter2",
 }
+
+
+def _rank_in_top1m(pw: str) -> int | None:
+    """Rank of `pw` in the bundled top-1,000,000 breach list (1 = most common),
+    or None if it isn't in the list / the list isn't bundled."""
+    p = bundled_wordlist()
+    if not p:
+        return None
+    try:
+        with p.open(encoding="utf-8", errors="ignore") as f:
+            for i, line in enumerate(f, 1):
+                if line.rstrip("\r\n") == pw:  # tolerate CRLF from git checkout
+                    return i
+    except OSError:
+        return None
+    return None
+
+
+def breach_check() -> None:
+    header("Breach check", "Is this password in the top 1,000,000 most-used list?")
+    if not bundled_wordlist():
+        console.print("[yellow]The top-1M list isn't bundled with this build.[/]")
+        return pause()
+    pw = Prompt.ask("Password to check")
+    rank = _rank_in_top1m(pw)
+    if rank is None:
+        console.print("[green]Not found[/] in the top 1,000,000 — better than most, "
+                      "but that alone doesn't make it strong.")
+    else:
+        pct = rank / 1_000_000 * 100
+        console.print(f"[red]FOUND[/] — ranked [bold]#{rank:,}[/] of 1,000,000 "
+                      f"(more common than {100 - pct:.2f}% of the list).")
+        console.print("[yellow]This password is in public breach corpora — "
+                      "crackers try it in seconds. Do not use it.[/]")
+    report("Breach check", f"rank={rank if rank else 'not-found'}")
+    pause()
 
 
 def _charset_size(pw: str) -> int:
@@ -34,8 +70,11 @@ def strength() -> None:
     pw = Prompt.ask("Password (typed in the clear here — use throwaways)")
     size = _charset_size(pw)
     entropy = len(pw) * math.log2(size)
+    rank = _rank_in_top1m(pw)  # checks the bundled top-1M breach list
 
-    if pw.lower() in COMMON:
+    if rank is not None:
+        verdict, color = f"TRIVIAL – #{rank:,} in the top-1M breach list", "red"
+    elif pw.lower() in COMMON:
         verdict, color = "TRIVIAL – it's on every wordlist", "red"
     elif entropy < 28:
         verdict, color = "Very weak", "red"
@@ -53,6 +92,7 @@ def strength() -> None:
     table.add_row("Charset size", str(size))
     table.add_row("Entropy", f"{entropy:.1f} bits")
     table.add_row("Offline crack time*", _human_time(seconds))
+    table.add_row("In top-1M breach list", f"[red]yes — #{rank:,}[/]" if rank else "[green]no[/]")
     table.add_row("Verdict", f"[{color}]{verdict}[/]")
     console.print(table)
     console.print("[dim]*brute force at ~1e10 guesses/s vs a fast hash. A slow hash "
@@ -154,7 +194,7 @@ def policy_check() -> None:
         ("has uppercase", any(c.isupper() for c in pw)),
         ("has a digit", any(c.isdigit() for c in pw)),
         ("has a symbol", any(not c.isalnum() for c in pw)),
-        ("not a common password", pw.lower() not in COMMON),
+        ("not in top-1M breach list", _rank_in_top1m(pw) is None and pw.lower() not in COMMON),
     ]
     t = Table(show_header=False, box=None)
     for name, ok in checks:
@@ -167,7 +207,8 @@ def policy_check() -> None:
 
 MENU = {
     "1": ("Password strength / entropy", strength),
-    "2": ("Targeted wordlist generator", wordlist_gen),
-    "3": ("Target profiler (CUPP-style wordlist)", cupp_profiler),
-    "4": ("Password policy checker", policy_check),
+    "2": ("Breach check (top-1M list)", breach_check),
+    "3": ("Targeted wordlist generator", wordlist_gen),
+    "4": ("Target profiler (CUPP-style wordlist)", cupp_profiler),
+    "5": ("Password policy checker", policy_check),
 }

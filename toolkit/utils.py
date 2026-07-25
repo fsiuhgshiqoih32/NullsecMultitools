@@ -19,6 +19,12 @@ def resource_path(*parts: str) -> Path:
     base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
     return base.joinpath(*parts)
 
+
+def bundled_wordlist() -> Path | None:
+    """Path to the bundled top-1,000,000 password list, or None if absent."""
+    p = resource_path("wordlists", "top-1million-passwords.txt")
+    return p if p.is_file() else None
+
 # --- platform detection -----------------------------------------------------
 IS_WINDOWS = platform.system() == "Windows"
 IS_MAC = platform.system() == "Darwin"

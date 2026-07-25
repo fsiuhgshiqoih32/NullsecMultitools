@@ -4,7 +4,7 @@
 
 # nullsec
 
-**A menu-driven offensive-security multitool — 39 modules and 286 built-in tools behind one prompt.**
+**A menu-driven offensive-security multitool — 39 modules and 287 built-in tools behind one prompt.**
 
 Recon · password cracking · crypto & cipher breaking · web/API testing · forensics · steganography · OSINT · evasion · payload generation — most of it pure Python with no setup.
 
@@ -18,14 +18,11 @@ Recon · password cracking · crypto & cipher breaking · web/API testing · for
 
 </div>
 
-```
-                ____
-   ____  __  __/ / /_______  _____
-  / __ \/ / / / / / ___/ _ \/ ___/
- / / / / /_/ / / (__  )  __/ /__
-/_/ /_/\__,_/_/_/____/\___/\___/
-        offensive security framework · authorized use only
-```
+<div align="center">
+
+<img src="docs/demo.gif" alt="nullsec demo — home, breach check, AI, utilities" width="820">
+
+</div>
 
 Most of nullsec runs on **pure Python** (just `rich` + `requests`). Heavier external
 tools — `nmap`, `sqlmap`, `hydra`, `nuclei`, `metasploit`, `john`, `hashcat` — light
@@ -33,12 +30,13 @@ up automatically once they're installed, **natively or through WSL**. Nothing is
 required to start: missing tools simply grey out their module and the built-in
 scanners/crackers keep working.
 
-- **39 modules · 286 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
+- **39 modules · 287 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
 - **Auto-install**: missing Python dependencies install themselves on first run; the AI tab can auto-install Ollama + a model
 - **Windows auto-setup**: on launch it elevates (one UAC prompt) and adds a Defender exclusion so the payload data isn't quarantined — the Payload Arsenal just works
 - **2,964** curated tools in the searchable catalog
 - **~60,900** exploit/template modules reachable once Exploit-DB, Nuclei, and Metasploit are installed
 - **71** ready-to-fill reverse/bind/web-shell payloads + msfvenom builders
+- **1,000,000 most-common passwords** bundled — instant offline breach lookup (is a password in the top-1M, and at what rank?) and the default wordlist for the John/hashcat crackers
 - Session reporting to Markdown/HTML, a CyberChef-style transform pipeline, and a WSL bridge for Linux-only tools
 
 ---
@@ -56,6 +54,33 @@ scanners/crackers keep working.
 <img src="docs/screenshot-module.svg" alt="Hashes module menu" width="380">&nbsp;&nbsp;<img src="docs/screenshot-arsenal.svg" alt="Payload Arsenal reverse shell" width="380">
 
 </div>
+
+---
+
+## Highlights
+
+**🔐 Built-in breach lookup (1,000,000 passwords).** The top-1M most-used passwords
+ship with nullsec, so the Passwords module can tell you *instantly, offline* whether
+a password is in public breach corpora and exactly how common it is — `123456` is
+`#1`, `password` is `#2`, `P@ssw0rd` is `#15,585`. The same list is the default
+wordlist for the John and hashcat crackers, so dictionary attacks work out of the box.
+
+**🤖 AI assistant.** A first-class module that streams from a **local Ollama** model
+(auto-picks the fastest one, auto-installs on demand) or any OpenAI-compatible API.
+Chat, explain a command or error, suggest next steps from your recon notes, or paste
+output to analyze — answers render as Markdown with proper code blocks.
+
+**💣 Payload Arsenal.** 71 ready-to-fill reverse/bind/web shells (bash, python, PHP,
+PowerShell, socat, …) plus msfvenom builders — pick one, drop in your LHOST/LPORT,
+and copy. PowerShell shells even get a `-enc` base64 one-liner generated automatically.
+
+**⚙️ It just works on Windows.** First launch elevates once (UAC) and adds a Defender
+exclusion so the payload data isn't quarantined, missing Python deps install
+themselves, and the whole thing runs as a single self-contained exe.
+
+**🧰 39 modules of tooling** — from recon, web/API testing, and hash cracking to
+forensics, steganography, evasion, and a Utilities tab (subnet calc, entropy, base
+conversion, secure passgen, and more).
 
 ---
 

@@ -10,7 +10,8 @@ from pathlib import Path
 from rich.prompt import Prompt
 from rich.table import Table
 
-from .utils import console, header, pause, require_tool, run_external
+from .utils import (bundled_wordlist, console, header, pause, require_tool,
+                    run_external)
 
 # (name, John --format hint, regex). Identification is heuristic — length + charset.
 HASH_SIGNATURES = [
@@ -90,7 +91,10 @@ def john_crack() -> None:
         return pause()
 
     fmt = Prompt.ask("John --format (blank = let John autodetect)", default="").strip()
-    wl = Prompt.ask("Wordlist path (blank = John default rules)", default="").strip('"')
+    _bwl = bundled_wordlist()
+    wl = Prompt.ask("Wordlist path" + (" (blank = bundled top-1M)" if _bwl else
+                                       " (blank = John default rules)"),
+                    default=str(_bwl) if _bwl else "").strip('"')
 
     cmd = ["john"]
     if fmt:
@@ -120,7 +124,9 @@ def hashcat_crack() -> None:
     console.print("[dim]Common modes: 0=MD5  100=SHA1  1400=SHA256  1700=SHA512  "
                   "3200=bcrypt  1000=NTLM[/]")
     mode = Prompt.ask("hash-mode (-m)", default="0").strip()
-    wl = Prompt.ask("Wordlist path").strip('"')
+    _bwl = bundled_wordlist()
+    wl = Prompt.ask("Wordlist path" + (" (blank = bundled top-1M)" if _bwl else ""),
+                    default=str(_bwl) if _bwl else "").strip('"')
     if not Path(wl).is_file():
         console.print("[red]Wordlist not found.[/]")
         return pause()
