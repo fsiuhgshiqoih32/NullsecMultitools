@@ -35,16 +35,21 @@ def save(rec: Console, name: str, title: str) -> None:
     print("wrote", DOCS / name)
 
 
-def render_menu(rec: Console, name: str, menu: dict) -> None:
+def render_menu(rec: Console, key: str, name: str, menu: dict) -> None:
     """Reproduce run_category's header + menu listing for a screenshot."""
     import main
+    desc = main.CATEGORIES.get(key, ("", "", ""))[2]
     rec.print(Text(main.BANNER.rstrip("\n"), style=main.BANNER_STYLE))
-    rec.print(f"\n  [white]Ø[/] [bold grey85]{name}[/]\n")
+    rec.print(f"\n  [white]Ø[/] [bold grey85]{name}[/]")
+    if desc:
+        rec.print(f"  [grey42]{desc}[/]")
+    rec.print()
     for k, (label, _fn) in menu.items():
-        rec.print(f"    [cyan]{k:>2}[/]  {label}")
-    rec.print("    [cyan] b[/]  [bright_black]back[/]   "
-              "[cyan]/[/] [bright_black]home[/]   [cyan]q[/] [bright_black]quit[/]")
-    rec.print(f"\n  [grey42]nullsec[/]([cyan]{name.split()[0].lower()}[/]) >")
+        rec.print(f"     [bold cyan]{k:>2}[/]  [grey85]{label}[/]")
+    rec.print("\n     [grey42]b[/] [grey54]back[/]   [grey42]/[/] [grey54]home[/]"
+              "   [grey42]q[/] [grey54]quit[/]")
+    rec.print(f"\n  [grey50]nullsec[/][grey42]([/][cyan]{name.split()[0].lower()}[/]"
+              f"[grey42])[/] [grey42]›[/]")
 
 
 def main_gen() -> None:
@@ -61,7 +66,7 @@ def main_gen() -> None:
     # 2) A module menu (Hashes & Cracking) -----------------------------------
     from toolkit import hashes
     rec = new_console()
-    render_menu(rec, "Hashes & Cracking", hashes.MENU)
+    render_menu(rec, "2", "Hashes & Cracking", hashes.MENU)
     save(rec, "screenshot-module.svg", "nullsec — module")
 
     # 3) A tool in action: Payload Arsenal building a reverse shell -----------
