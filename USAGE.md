@@ -101,6 +101,74 @@ the **session report** (`r`), which you can save as Markdown or HTML.
 
 ---
 
+## 4b. Workspaces (engagement management)
+
+The **Workspace** module (`W` from the home screen) lets you create named
+engagements that persist across sessions. Each workspace stores:
+
+- **Findings** — automatically captured from the session report when a workspace
+  is active. Every module that logs to `report("category", "detail")` will also
+  save into the workspace.
+- **Notes** — free-text notes you add manually (e.g. "confirmed SSRF on /api/proxy").
+- **Metadata** — target, operator, creation timestamp.
+- **Export** — Markdown or HTML report of all findings + notes.
+
+### Quick workflow
+
+1. `W` → `1` — **Create** a workspace (e.g. `pentest-acme-2026`), enter target/operator.
+2. Run your normal modules (recon, web, network, etc.). Findings auto-persist.
+3. `W` → `5` — **Add note** for manual observations.
+4. `W` → `9` — **Export** the workspace as Markdown or HTML.
+5. Next session: `W` → `2` — **Load** the workspace and continue where you left off.
+
+The home screen shows the active workspace name and finding/note counts in the
+status line. The banner line also shows `ws: <name>` when a workspace is active.
+
+---
+
+## 4c. Proxy Manager
+
+The **Proxy Manager** module (`P` from the home screen) lets you load, test,
+rotate, and export proxies. Other modules can automatically route their HTTP
+requests through the active proxy.
+
+### Supported formats
+
+| Format | Example |
+|--------|---------|
+| `ip:port` | `1.2.3.4:8080` |
+| `ip:port:user:pass` | `1.2.3.4:8080:admin:secret` |
+| `http://ip:port` | `http://1.2.3.4:3128` |
+| `socks5://ip:port` | `socks5://1.2.3.4:1080` |
+| `socks5://user:pass@ip:port` | `socks5://admin:x@1.2.3.4:1080` |
+
+### Quick workflow
+
+1. `P` → `1` — **Load** the built-in list (~200 free proxies) or your own file.
+2. `P` → `5` — **Test** all proxies (checks connectivity + measures latency).
+3. Optionally keep only working proxies when prompted.
+4. `P` → `9` — **Toggle** proxy on (enables routing for all modules).
+5. `P` → `10` — Set rotation mode: **round-robin** or **random**.
+6. `P` → `7` — **Export** working proxies to a file for later use.
+
+### How modules use it
+
+When the proxy is enabled, any module that calls `get_proxy()` from
+`toolkit/utils.py` gets a `{"http": url, "https": url}` dict for `requests`:
+
+```python
+from .utils import get_proxy
+r = requests.get(url, proxies=get_proxy(), timeout=10)
+```
+
+If the proxy is disabled or empty, `get_proxy()` returns `None` (direct connection).
+
+> **Note:** Free public proxies are unreliable and short-lived. Always test
+> before use, and replace them with paid/private proxies for real engagements.
+> SOCKS5 support requires `pip install pysocks` (degrades gracefully if missing).
+
+---
+
 ## 5. Turning on the external tools
 
 Modules like Recon, Brute-force, Vuln Scan, and Tool Catalog drive real programs.
@@ -151,6 +219,8 @@ nullsec/
     arsenal.dat        # base64 payload data (loaded at runtime)
   data/tools.json      # the tool catalog
   data/state.json      # remembers your recent modules
+  data/proxies.txt     # built-in free proxy list (replace with your own)
+  workspaces/          # saved engagement workspaces (*.json)
   tests/test_smoke.py  # wiring checks (python tests/test_smoke.py)
 ```
 

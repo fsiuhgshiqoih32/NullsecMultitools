@@ -14,8 +14,9 @@ TOOLKIT_MODULES = [
     'toolkit.interceptor', 'toolkit.iot', 'toolkit.lolbins', 'toolkit.metadata',
     'toolkit.mobile', 'toolkit.network', 'toolkit.osint', 'toolkit.passwords',
     'toolkit.payloadenc', 'toolkit.postex', 'toolkit.recipe', 'toolkit.recon',
-    'toolkit.reversing', 'toolkit.smb', 'toolkit.stego', 'toolkit.vulnscan',
-    'toolkit.web', 'toolkit.wireless', 'toolkit.wordlists',
+    'toolkit.proxy', 'toolkit.reversing', 'toolkit.smb', 'toolkit.stego',
+    'toolkit.vulnscan', 'toolkit.web', 'toolkit.wireless', 'toolkit.wordlists',
+    'toolkit.workspace',
 ]
 
 # Optional libraries the toolkit imports lazily (via need_lib / importlib), so
@@ -33,7 +34,8 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('data\\tools.json', 'data'), ('toolkit\\arsenal.dat', 'toolkit'),
-           ('wordlists\\top-1million-passwords.txt', 'wordlists')],
+           ('wordlists\\top-1million-passwords.txt', 'wordlists'),
+           ('data\\proxies.txt', 'data')],
     hiddenimports=TOOLKIT_MODULES + OPTIONAL_LIBS,
     hookspath=[],
     hooksconfig={},

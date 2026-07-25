@@ -33,7 +33,7 @@ from toolkit import (__version__, adattacks, ai, arsenal, bruteforce, catalog,
                      generators, hardware, hashes, installer, interceptor, iot,
                      lolbins, metadata, mobile, network, osint, passwords,
                      payloadenc, postex, recipe, recon, reversing, smb, stego,
-                     toolbox, vulnscan, web, wireless, wordlists)
+                     proxy, toolbox, vulnscan, web, wireless, wordlists, workspace)
 from toolkit.utils import (IS_WINDOWS, console, detect_tools, get_wsl_distro,
                            probe_tools, render_banner, report, resource_path,
                            wsl_available)
@@ -81,6 +81,8 @@ CATEGORIES = {
     "H": ("Hardware / Physical", hardware.MENU, "BadUSB, Bluetooth, ATM, camera hijack, vishing"),
     "A": ("AI Assistant", ai.MENU, "LLM help: chat, explain, suggest, analyze (Ollama/OpenAI)"),
     "U": ("Utilities", toolbox.MENU, "Base/subnet/epoch/UUID/passgen/URL/entropy/JSON"),
+    "W": ("Workspace", workspace.MENU, "Named engagements: persist findings, notes, reports"),
+    "P": ("Proxy Manager", proxy.MENU, "Load, test, rotate, and export proxies"),
 }
 
 # System pseudo-entries (handled specially, not real categories).
@@ -130,7 +132,7 @@ GROUPS = [
     ("FORENSICS / DFIR", "green", ["f", "e", "z"]),
     ("IOT / HARDWARE", "bright_magenta", ["I", "H"]),
     ("EVASION / DEFENSE", "green", ["E", "d"]),
-    ("AI / UTILITIES", "bright_cyan", ["A", "U"]),
+    ("AI / UTILITIES", "bright_cyan", ["A", "U", "W", "P"]),
     ("SYSTEM", "blue", ["i", "r", "t", "q"]),
 ]
 
@@ -155,11 +157,12 @@ def _total_tools() -> int:
 
 def _banner_block() -> str:
     reachable = catalog.indexed_total() + arsenal.payload_count()
+    ws_name = workspace.get_active().name if workspace.is_active() else "none"
     return "\n".join([
         f"       =[ [bold green]nullsec[/] [green]v{__version__}[/] · offensive security framework ]",
         f"+ -- --=[ {len(CATEGORIES)} modules · {_total_tools()} tools ]",
         f"+ -- --=[ {catalog.local_count():,} cataloged · [bold]{reachable:,}[/] modules reachable ]",
-        f"+ -- --=[ wsl: {_wsl_status()} · log: {len(report.entries)} ]",
+        f"+ -- --=[ wsl: {_wsl_status()} · log: {len(report.entries)} · ws: {ws_name} ]",
     ])
 
 
@@ -211,6 +214,11 @@ def show_home() -> None:
     console.print(f"  [white]Ø[/] [bold grey85]nullsec[/] [grey50]v{__version__}[/]"
                   f"  [grey42]·[/]  [grey62]{len(CATEGORIES)} modules · "
                   f"{_total_tools()} tools[/]  [grey42]·[/]  [grey50]authorized use only[/]")
+    if workspace.is_active():
+        ws = workspace.get_active()
+        console.print(f"  [grey42]ws:[/] [bold green]{ws.name}[/]"
+                      f"  [grey42]·[/]  [grey62]{len(ws.findings)} findings · "
+                      f"{len(ws.notes)} notes[/]")
     console.print()
     console.print(Columns([_group_block(*g) for g in GROUPS], padding=(1, 4)))
     recent = [k for k in _load_recent() if k in CATEGORIES]

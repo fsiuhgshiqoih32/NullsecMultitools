@@ -19,6 +19,9 @@ install_win.log
 data/state.json
 data/ai_config.json
 
+# workspace engagement data
+workspaces/
+
 # generated session output
 *_report_*.md
 *_report_*.html

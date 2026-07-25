@@ -316,6 +316,26 @@ def kv_table(title: str, rows: list[tuple[str, str]]) -> Table:
     return t
 
 
+# --- proxy helper -----------------------------------------------------------
+# Lazy import avoids a circular dependency: toolkit.proxy imports from utils.
+
+def get_proxy() -> dict | None:
+    """Return a proxies dict for ``requests`` (e.g. ``{"http": url, ...}``),
+    or ``None`` if the proxy manager is disabled or empty.
+
+    Any module can do::
+
+        from .utils import get_proxy
+        r = requests.get(url, proxies=get_proxy(), timeout=10)
+    """
+    try:
+        from toolkit import proxy as _proxy_mod
+        mgr = _proxy_mod.get_manager()
+        return mgr.get_requests_proxies()
+    except Exception:
+        return None
+
+
 # --- session reporting ------------------------------------------------------
 
 @dataclass
@@ -327,14 +347,26 @@ class ReportEntry:
 
 
 class SessionReport:
-    """Collects findings during a run so they can be saved to Markdown."""
+    """Collects findings during a run so they can be saved to Markdown.
+
+    When ``active_workspace`` is set (by the Workspace module), every ``log()``
+    call is also forwarded into that workspace's persistent findings list.
+    """
 
     def __init__(self) -> None:
         self.entries: list[ReportEntry] = []
         self.started = datetime.now()
+        self.active_workspace = None  # set by toolkit.workspace.set_active
 
     def log(self, category: str, title: str, lines: list[str]) -> None:
-        self.entries.append(ReportEntry(category, title, [str(x) for x in lines]))
+        entry = ReportEntry(category, title, [str(x) for x in lines])
+        self.entries.append(entry)
+        if self.active_workspace is not None:
+            try:
+                self.active_workspace.add_finding(
+                    category, title, [str(x) for x in lines], entry.when)
+            except Exception:
+                pass  # never let workspace persistence crash a tool
 
     def __call__(self, category: str, detail: str = "", *lines: str) -> None:
         """Shorthand logger: ``report("Category", "one-line detail")``.

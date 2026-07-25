@@ -3,6 +3,23 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] — 2026-07-25
+
+### Added
+- **Proxy Manager** (`P`): load proxies (built-in list or file, 4 formats incl.
+  SOCKS), concurrently test connectivity + latency, round-robin/random rotation,
+  keep-working-only, export, and an on/off toggle. `utils.get_proxy()` gives any
+  module a `requests`-ready proxies dict.
+- **Workspace** (`W`): named engagements that persist findings, notes, target, and
+  operator to disk as JSON, with Markdown/HTML export. When a workspace is active,
+  the session reporter auto-forwards every finding into it; shown on the home screen.
+
+### Fixed
+- Proxy Manager's "Load" and "Toggle" called `report.log()` with a missing
+  argument (would crash); now use the shorthand logger.
+- Workspaces write to a persistent dir next to the exe instead of the read-only
+  bundle, so engagements survive across runs of the packaged build.
+
 ## [0.5.1] — 2026-07-25
 
 ### Fixed

@@ -152,6 +152,145 @@ def test_catalog_tools_are_well_formed():
         assert name and cat and desc and install
 
 
+def test_workspace_menu_is_valid():
+    from toolkit import workspace
+    assert isinstance(workspace.MENU, dict) and workspace.MENU
+    for k, (label, fn) in workspace.MENU.items():
+        assert isinstance(label, str) and label, f"workspace:{k} has no label"
+        assert callable(fn), f"workspace:{k} target is not callable"
+
+
+def test_workspace_create_save_load_delete():
+    from toolkit import workspace
+    ws = workspace.Workspace(name="_test_ws", target="10.0.0.1", operator="tester")
+    ws.add_note("test note")
+    ws.add_finding("recon", "port scan", ["- 22 open", "- 80 open"], "12:00:00")
+    path = ws.save()
+    assert path.is_file(), "workspace file not created"
+
+    loaded = workspace.Workspace.load("_test_ws")
+    assert loaded is not None, "workspace failed to load"
+    assert loaded.name == "_test_ws"
+    assert loaded.target == "10.0.0.1"
+    assert loaded.operator == "tester"
+    assert len(loaded.notes) == 1
+    assert loaded.notes[0].text == "test note"
+    assert len(loaded.findings) == 1
+    assert loaded.findings[0].category == "recon"
+
+    md = loaded.as_markdown()
+    assert "_test_ws" in md and "port scan" in md and "test note" in md
+
+    assert loaded.delete(), "workspace file not deleted"
+    assert not path.is_file(), "workspace file still exists after delete"
+
+
+def test_report_forwards_to_active_workspace():
+    from toolkit import workspace
+    from toolkit.utils import SessionReport
+
+    r = SessionReport()
+    ws = workspace.Workspace(name="_test_fwd")
+    r.active_workspace = ws
+    r.log("recon", "test finding", ["- line 1"])
+    r("web", "headers checked")
+    assert len(ws.findings) == 2
+    assert ws.findings[0].category == "recon"
+    assert ws.findings[0].title == "test finding"
+    assert ws.findings[1].category == "web"
+    r.active_workspace = None
+
+
+def test_proxy_menu_is_valid():
+    from toolkit import proxy
+    assert isinstance(proxy.MENU, dict) and proxy.MENU
+    for k, (label, fn) in proxy.MENU.items():
+        assert isinstance(label, str) and label, f"proxy:{k} has no label"
+        assert callable(fn), f"proxy:{k} target is not callable"
+
+
+def test_proxy_parsing_all_formats():
+    from toolkit import proxy
+
+    # ip:port -> http
+    p = proxy.parse_proxy("1.2.3.4:8080")
+    assert p is not None and p.scheme == "http" and p.host == "1.2.3.4" and p.port == 8080
+    assert p.url == "http://1.2.3.4:8080"
+
+    # ip:port:user:pass -> http with auth
+    p = proxy.parse_proxy("1.2.3.4:8080:admin:secret")
+    assert p is not None and p.username == "admin" and p.password == "secret"
+    assert "admin:secret@" in p.url
+
+    # http://ip:port
+    p = proxy.parse_proxy("http://10.0.0.1:3128")
+    assert p is not None and p.scheme == "http" and p.port == 3128
+
+    # socks5://ip:port
+    p = proxy.parse_proxy("socks5://10.0.0.2:1080")
+    assert p is not None and p.scheme == "socks5" and p.port == 1080
+
+    # socks5://user:pass@ip:port
+    p = proxy.parse_proxy("socks5://user:pwd@10.0.0.3:1080")
+    assert p is not None and p.username == "user" and p.password == "pwd"
+
+    # invalid entries
+    assert proxy.parse_proxy("") is None
+    assert proxy.parse_proxy("# comment") is None
+    assert proxy.parse_proxy("not_a_proxy") is None
+    assert proxy.parse_proxy("1.2.3.4:99999") is None
+
+
+def test_proxy_manager_add_remove_clear():
+    from toolkit import proxy
+    mgr = proxy.ProxyManager()
+    assert mgr.add("1.2.3.4:8080")
+    assert mgr.add("socks5://5.6.7.8:1080")
+    assert len(mgr.proxies) == 2
+    assert mgr.remove(0)
+    assert len(mgr.proxies) == 1
+    assert mgr.proxies[0].scheme == "socks5"
+    mgr.clear()
+    assert len(mgr.proxies) == 0
+
+
+def test_proxy_rotation():
+    from toolkit import proxy
+    mgr = proxy.ProxyManager()
+    for i in range(5):
+        mgr.add(f"10.0.0.{i}:8080")
+    # round-robin: should cycle through all 5
+    seen = set()
+    for _ in range(5):
+        entry = mgr.get_next()
+        assert entry is not None
+        seen.add(entry.host)
+    assert len(seen) == 5  # all unique = proper round-robin
+    # random mode should still return a valid proxy
+    mgr.rotation = "random"
+    entry = mgr.get_next()
+    assert entry is not None and entry.host.startswith("10.0.0.")
+
+
+def test_proxy_stats_and_get_proxy_helper():
+    from toolkit import proxy
+    from toolkit.utils import get_proxy
+
+    # get_proxy returns None when disabled
+    mgr = proxy.get_manager()
+    mgr.clear()
+    mgr.enabled = False
+    assert get_proxy() is None
+
+    # get_proxy returns dict when enabled with proxies
+    mgr.add("1.2.3.4:8080")
+    mgr.enabled = True
+    result = get_proxy()
+    assert result is not None and "http" in result and "https" in result
+    mgr.enabled = False
+    mgr.clear()
+
+
 if __name__ == "__main__":
     # Allow running without pytest:  python tests/test_smoke.py
     tests = [v for k, v in sorted(globals().items())
