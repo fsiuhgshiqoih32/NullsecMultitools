@@ -3,6 +3,17 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.4.5] — 2026-07-25
+
+### Fixed
+- **OpenVPN connect failed on Windows** ("Bad backslash usage") — the injected
+  `auth-user-pass` file path now uses forward slashes, which OpenVPN accepts.
+
+### Added
+- **Double-hop**: when the Proxy Manager is enabled, the VPN config is written with
+  an `http-proxy`/`socks-proxy` directive so the encrypted tunnel is routed through
+  the proxy first (you -> proxy -> VPN), hiding your IP from the VPN operator.
+
 ## [2.4.4] — 2026-07-25
 
 ### Added

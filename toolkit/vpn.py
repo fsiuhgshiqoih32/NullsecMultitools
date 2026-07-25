@@ -8,6 +8,7 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
@@ -501,6 +502,20 @@ def details() -> None:
     pause()
 
 
+def _proxy_directive() -> str | None:
+    """If the Proxy Manager is enabled, an OpenVPN directive to route the tunnel
+    through it (a genuine second hop: you -> proxy -> VPN). None if no proxy."""
+    p = get_proxy()
+    if not p:
+        return None
+    u = urllib.parse.urlsplit(p.get("https") or p.get("http") or "")
+    if not (u.hostname and u.port):
+        return None
+    if (u.scheme or "").startswith("socks"):
+        return f"socks-proxy {u.hostname} {u.port}"
+    return f"http-proxy {u.hostname} {u.port}"
+
+
 def _write_config(s: VPNServer) -> Path | None:
     try:
         data = base64.b64decode(s.config_b64)
@@ -509,26 +524,31 @@ def _write_config(s: VPNServer) -> Path | None:
         return None
     safe = re.sub(r"[^A-Za-z0-9.-]", "-", s.host or s.ip)
     out = Path.cwd() / f"{s.source}_{s.cc}_{safe}.ovpn"
-    text = data.decode("utf-8", "ignore")
+    lines = data.decode("utf-8", "ignore").splitlines()
+
+    # Double-hop: send the encrypted tunnel through the Proxy Manager first.
+    proxy = _proxy_directive()
+    if proxy:
+        lines.insert(1, proxy)
+        h, port = proxy.split()[1], proxy.split()[2]
+        console.print(f"[green]Double-hop ON:[/] tunnel routed through proxy "
+                      f"[cyan]{h}:{port}[/]  [dim](you -> proxy -> VPN)[/]")
+
     if s.username:
-        # VPNBook uses auth-user-pass; write the shared creds to a file and point
-        # the config at it so OpenVPN can connect without an interactive prompt.
+        # VPNBook uses auth-user-pass; write the shared creds to a file. OpenVPN
+        # treats '\' as an escape, so the path MUST use forward slashes.
         auth = out.with_suffix(".auth")
         auth.write_text(f"{s.username}\n{s.password}\n", encoding="utf-8")
-        # Point the config at the auth file. Rebuild line-by-line rather than
-        # re.sub, whose replacement string would mangle the Windows path's
-        # backslashes (e.g. \U in C:\Users -> 'bad escape').
-        lines = text.splitlines()
+        authref = str(auth).replace("\\", "/")
         for i, ln in enumerate(lines):
             if ln.strip().startswith("auth-user-pass"):
-                lines[i] = f'auth-user-pass "{auth}"'
+                lines[i] = f'auth-user-pass "{authref}"'
                 break
-        out.write_text("\n".join(lines) + "\n", encoding="utf-8")
         console.print(f"[dim]Auth (shared VPNBook creds):[/] "
                       f"[cyan]{s.username}[/] / [cyan]{s.password}[/]  "
                       f"[dim]-> {auth.name}[/]")
-    else:
-        out.write_bytes(data)
+
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out
 
 
