@@ -216,7 +216,8 @@ def show_home() -> None:
     if recent:
         console.print("\n[bright_black]  recent:[/] "
                       + "   ".join(f"[cyan]{k}[/] {CATEGORIES[k][0]}" for k in recent))
-    console.print("\n[bright_black]  key = open   ·   search <term>   ·   help   ·   q = quit[/]")
+    console.print("\n  [grey42]key[/] [grey54]open[/]   [grey42]·[/]   [grey42]search <term>[/]"
+                  "   [grey42]·[/]   [grey42]help[/]   [grey42]·[/]   [grey42]q[/] [grey54]quit[/]")
 
 
 def cmd_help() -> None:
@@ -359,15 +360,20 @@ def _module_error(module: str, key: str, menu: dict, exc: BaseException) -> None
 
 def run_category(key: str, name: str, menu: dict) -> str | None:
     modid = name.split()[0].lower()
+    desc = CATEGORIES.get(key, ("", "", ""))[2]
     while True:
         console.clear()
         console.print(Text(BANNER.rstrip("\n"), style=BANNER_STYLE))
-        console.print(f"\n  [white]Ø[/] [bold grey85]{name}[/]\n")
+        console.print(f"\n  [white]Ø[/] [bold grey85]{name}[/]")
+        if desc:
+            console.print(f"  [grey42]{desc}[/]")
+        console.print()
         for k, (label, _fn) in menu.items():
-            console.print(f"    [cyan]{k:>2}[/]  {label}")
-        console.print("    [cyan] b[/]  [bright_black]back[/]   "
-                      "[cyan]/[/] [bright_black]home[/]   [cyan]q[/] [bright_black]quit[/]")
-        choice = Prompt.ask(f"\n[green]nullsec[/]([cyan]{modid}[/]) >").strip().lower()
+            console.print(f"     [bold cyan]{k:>2}[/]  [grey85]{label}[/]")
+        console.print("\n     [grey42]b[/] [grey54]back[/]   [grey42]/[/] [grey54]home[/]"
+                      "   [grey42]q[/] [grey54]quit[/]")
+        choice = Prompt.ask(f"\n  [grey50]nullsec[/][grey42]([/][cyan]{modid}[/]"
+                            f"[grey42])[/] [grey42]›[/]").strip().lower()
         if choice in ("b", "/"):
             return None
         if choice in ("q", "quit", "exit"):
@@ -406,7 +412,7 @@ def resolve_category(raw: str) -> str | None:
 def main() -> None:
     while True:
         show_home()
-        raw = Prompt.ask("\n[green]nullsec[/] >").strip()
+        raw = Prompt.ask("\n  [grey50]nullsec[/] [grey42]›[/]").strip()
         low = raw.lower()
         verb = low.split(None, 1)[0] if low else ""
         arg = raw.split(None, 1)[1] if " " in raw else ""

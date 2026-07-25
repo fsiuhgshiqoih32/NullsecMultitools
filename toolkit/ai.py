@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 import requests
+from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 
@@ -31,11 +32,13 @@ _DEFAULTS = {
 }
 
 _SYSTEM = (
-    "You are nullsec's built-in assistant, helping an authorized security "
-    "professional working in their own lab, a CTF, or a sanctioned engagement. "
-    "Be concise, technical, and practical. Explain commands and tool output, "
-    "suggest concrete next steps, and analyse data the user pastes. Prefer short "
-    "answers with copy-pasteable commands. Assume the user has authorization."
+    "You are nullsec's built-in assistant for an authorized security professional "
+    "working in their own lab, a CTF, or a sanctioned engagement. Assume the user "
+    "has authorization. Be concise, technical, and practical. Explain commands and "
+    "tool output, suggest concrete next steps, and analyse data the user pastes. "
+    "Format with Markdown: put commands in fenced code blocks, use short bullet "
+    "lists for steps, and lead with the answer before any caveats. Skip boilerplate "
+    "disclaimers."
 )
 
 
@@ -66,25 +69,32 @@ def _save_cfg(cfg: dict) -> None:
 
 # --- backends ---------------------------------------------------------------
 
-def _ollama_models(host: str) -> list[str]:
+def _ollama_info(host: str) -> list[tuple[str, int]]:
+    """(name, size_bytes) for every installed model, or [] if unreachable."""
     try:
         r = requests.get(f"{host.rstrip('/')}/api/tags", timeout=5)
         r.raise_for_status()
-        return [m["name"] for m in r.json().get("models", [])]
+        return [(m["name"], m.get("size", 0)) for m in r.json().get("models", [])]
     except Exception:
         return []
 
 
+def _ollama_models(host: str) -> list[str]:
+    return [n for n, _ in _ollama_info(host)]
+
+
 def _chat_models(host: str) -> list[str]:
-    """Installed models that can actually chat (exclude embedding-only models)."""
-    return [m for m in _ollama_models(host) if "embed" not in m.lower()]
+    """Chat-capable models (no embedding models), smallest/fastest first."""
+    chat = [(n, s) for n, s in _ollama_info(host) if "embed" not in n.lower()]
+    chat.sort(key=lambda x: x[1] or 0)  # smaller model = faster to load & run
+    return [n for n, _ in chat]
 
 
 def _resolve_model(cfg: dict) -> str:
     if cfg["model"]:
         return cfg["model"]
     if cfg["backend"] == "ollama":
-        models = _chat_models(cfg["ollama_host"])
+        models = _chat_models(cfg["ollama_host"])  # smallest first
         if models:
             return models[0]
         raise AIError(
@@ -237,45 +247,107 @@ def _stream(messages: list[dict], cfg: dict):
             raise AIError(f"OpenAI-compatible request failed: {e}")
 
 
-def _ask(messages: list[dict], cfg: dict) -> str:
-    """Stream a reply to the console and return the full text."""
+def _ask(messages: list[dict], cfg: dict, *, render: bool = False) -> str:
+    """Get a reply. Shows a 'thinking' spinner until the first token so a slow
+    (cold) model never looks hung. Streams live for chat; renders Markdown for
+    one-shot answers (nicer code blocks / lists)."""
     console.print(f"[bright_black]  ({cfg['backend']} · {_resolve_model(cfg)})[/]\n")
     parts: list[str] = []
-    for chunk in _stream(messages, cfg):
-        if chunk:
-            parts.append(chunk)
-            print(chunk, end="", flush=True)
+
+    if render:
+        with console.status("[grey50]thinking…[/]", spinner="dots"):
+            for chunk in _stream(messages, cfg):
+                if chunk:
+                    parts.append(chunk)
+        text = "".join(parts).strip()
+        console.print(Markdown(text) if text else "[yellow](no response)[/]")
+        return text
+
+    status = console.status("[grey50]thinking…[/]", spinner="dots")
+    status.start()
+    first = True
+    try:
+        for chunk in _stream(messages, cfg):
+            if chunk:
+                if first:
+                    status.stop()
+                    first = False
+                parts.append(chunk)
+                print(chunk, end="", flush=True)
+    finally:
+        if first:
+            status.stop()
     print("\n")
     return "".join(parts)
 
 
 def _oneshot(user: str, cfg: dict) -> None:
     reply = _ask([{"role": "system", "content": _SYSTEM},
-                  {"role": "user", "content": user}], cfg)
+                  {"role": "user", "content": user}], cfg, render=True)
     report("AI", f"{user[:60]}… -> {len(reply)} chars")
 
 
 # --- menu actions -----------------------------------------------------------
 
 def chat() -> None:
-    header("AI chat", "Freeform security assistant — type 'back' to leave")
+    header("AI chat", "Chat with the assistant · /model /models /clear /help · 'back' to leave")
     cfg = _load_cfg()
     if not ensure_ready(cfg):
         return pause()
+    console.print(f"[grey50]  model:[/] [cyan]{_resolve_model(cfg)}[/]  "
+                  "[grey42](type /models to switch)[/]\n")
     history = [{"role": "system", "content": _SYSTEM}]
     try:
         while True:
             msg = Prompt.ask("[bold cyan]you[/]").strip()
             if msg.lower() in ("back", "exit", "quit", "b", ""):
                 break
+            if msg.startswith("/"):
+                if _chat_command(msg, cfg, history):
+                    continue
+                break
             history.append({"role": "user", "content": msg})
             console.print("[bold green]ai[/]")
             reply = _ask(history, cfg)
             history.append({"role": "assistant", "content": reply})
-        report("AI chat", f"{len(history)//2} turn(s)")
+        report("AI chat", f"{sum(1 for m in history if m['role']=='user')} turn(s)")
     except AIError as e:
         console.print(Panel(str(e), title="AI unavailable", border_style="yellow"))
         pause()
+
+
+def _chat_command(cmd: str, cfg: dict, history: list) -> bool:
+    """Handle a /slash command inside chat. Returns False to exit the chat."""
+    parts = cmd.split(maxsplit=1)
+    name, arg = parts[0].lower(), (parts[1].strip() if len(parts) > 1 else "")
+    if name in ("/quit", "/exit"):
+        return False
+    if name == "/help":
+        console.print("[grey62]  /models — list & switch · /model <name> — set model · "
+                      "/clear — reset chat · /help · back — leave[/]")
+    elif name == "/models":
+        models = _chat_models(cfg["ollama_host"]) if cfg["backend"] == "ollama" else []
+        if not models:
+            console.print("[yellow]  (no local models — see Settings)[/]")
+        else:
+            for i, m in enumerate(models, 1):
+                mark = " [green]<- current[/]" if m == _resolve_model(cfg) else ""
+                console.print(f"    [cyan]{i}[/]  {m}{mark}")
+            sel = Prompt.ask("  switch to # (blank = keep)", default="").strip()
+            if sel.isdigit() and 1 <= int(sel) <= len(models):
+                cfg["model"] = models[int(sel) - 1]
+                _save_cfg(cfg)
+                console.print(f"[green]  model -> {cfg['model']}[/]")
+    elif name == "/model" and arg:
+        cfg["model"] = arg
+        _save_cfg(cfg)
+        console.print(f"[green]  model -> {arg}[/]")
+    elif name == "/clear":
+        del history[1:]  # keep the system prompt
+        console.print("[grey50]  (conversation cleared)[/]")
+    else:
+        console.print(f"[yellow]  unknown command {name} — try /help[/]")
+    return True
 
 
 def explain() -> None:

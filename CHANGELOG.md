@@ -3,6 +3,16 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] — 2026-07-25
+
+### Changed
+- **AI is faster and clearer**: auto-picks the smallest (fastest) installed model
+  instead of the first one; shows a "thinking" spinner until the first token so a
+  cold model never looks hung; renders answers as Markdown (proper code blocks and
+  lists). In-chat commands added: `/models`, `/model <name>`, `/clear`, `/help`.
+- **UI polish**: module screens now show the module's description, cleaner item
+  layout, and a consistent grey footer/prompt across home and every module.
+
 ## [0.3.0] — 2026-07-25
 
 ### Added
