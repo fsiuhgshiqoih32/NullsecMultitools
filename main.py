@@ -15,6 +15,11 @@ for stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
+# Auto-install any missing Python dependencies before we import them (no-op in
+# the frozen exe, where everything is bundled).
+from toolkit import bootstrap  # noqa: E402  (must precede the rich/toolkit imports)
+bootstrap.ensure()
+
 from rich import box
 from rich.columns import Columns
 from rich.panel import Panel
@@ -22,7 +27,7 @@ from rich.prompt import Prompt
 from rich.table import Table
 from rich.text import Text
 
-from toolkit import (__version__, adattacks, arsenal, bruteforce, catalog,
+from toolkit import (__version__, adattacks, ai, arsenal, bruteforce, catalog,
                      cloud, crypto, cryptotools, database, detect,
                      email_analyzer, evasion, offense, extractor, forensics,
                      generators, hardware, hashes, installer, interceptor, iot,
@@ -74,6 +79,7 @@ CATEGORIES = {
     "X": ("Exploit Toolkit", offense.MENU, "C2 listener, webshell gen, token impersonation, worm sim"),
     "I": ("IoT / ICS / SCADA", iot.MENU, "BACnet, ZigBee, Z-Wave, WiFi deauth, VLAN hop, VoIP"),
     "H": ("Hardware / Physical", hardware.MENU, "BadUSB, Bluetooth, ATM, camera hijack, vishing"),
+    "A": ("AI Assistant", ai.MENU, "LLM help: chat, explain, suggest, analyze (Ollama/OpenAI)"),
 }
 
 # System pseudo-entries (handled specially, not real categories).
@@ -123,6 +129,7 @@ GROUPS = [
     ("FORENSICS / DFIR", "green", ["f", "e", "z"]),
     ("IOT / HARDWARE", "bright_magenta", ["I", "H"]),
     ("EVASION / DEFENSE", "green", ["E", "d"]),
+    ("AI", "bright_cyan", ["A"]),
     ("SYSTEM", "blue", ["i", "r", "t", "q"]),
 ]
 

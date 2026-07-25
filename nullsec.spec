@@ -4,7 +4,7 @@
 # machine with the repo checked out — no dependency on files outside the project.
 
 TOOLKIT_MODULES = [
-    'toolkit', 'toolkit.adattacks', 'toolkit.arsenal', 'toolkit.bruteforce',
+    'toolkit', 'toolkit.adattacks', 'toolkit.ai', 'toolkit.arsenal', 'toolkit.bruteforce',
     'toolkit.catalog', 'toolkit.catalog_data', 'toolkit.cloud', 'toolkit.crypto',
     'toolkit.cryptotools', 'toolkit.database', 'toolkit.detect',
     'toolkit.email_analyzer', 'toolkit.evasion', 'toolkit.offense',

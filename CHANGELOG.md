@@ -3,6 +3,19 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [0.3.0] — 2026-07-25
+
+### Added
+- **AI Assistant module** (`A` on the home menu): chat, explain a command/error,
+  suggest next steps, and analyze pasted output — streamed from a local **Ollama**
+  backend by default, or any OpenAI-compatible endpoint. The API key is read from
+  `OPENAI_API_KEY` and never stored on disk.
+- **Auto-install**: missing Python dependencies are installed automatically on
+  first run (skipped in the bundled exe). The AI module can also auto-install
+  Ollama and pull a small model on demand.
+- **Auto-build release workflow**: pushing a `v*` tag builds the Windows exe on a
+  runner and publishes it as a release automatically.
+
 ## [0.2.2] — 2026-07-25
 
 ### Added

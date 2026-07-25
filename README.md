@@ -4,7 +4,7 @@
 
 # nullsec
 
-**A menu-driven offensive-security multitool — 37 modules and 271 built-in tools behind one prompt.**
+**A menu-driven offensive-security multitool — 38 modules and 278 built-in tools behind one prompt.**
 
 Recon · password cracking · crypto & cipher breaking · web/API testing · forensics · steganography · OSINT · evasion · payload generation — most of it pure Python with no setup.
 
@@ -14,7 +14,7 @@ Recon · password cracking · crypto & cipher breaking · web/API testing · for
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 [![License: MIT](https://img.shields.io/github/license/fsiuhgshiqoih32/NullsecMultitools?color=2ea043)](LICENSE)
-![Modules](https://img.shields.io/badge/modules-37-red)
+![Modules](https://img.shields.io/badge/modules-38-red)
 
 </div>
 
@@ -33,7 +33,8 @@ up automatically once they're installed, **natively or through WSL**. Nothing is
 required to start: missing tools simply grey out their module and the built-in
 scanners/crackers keep working.
 
-- **37 modules · 271 built-in tools**
+- **38 modules · 278 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
+- **Auto-install**: missing Python dependencies install themselves on first run; the AI tab can auto-install Ollama + a model
 - **2,964** curated tools in the searchable catalog
 - **~60,900** exploit/template modules reachable once Exploit-DB, Nuclei, and Metasploit are installed
 - **71** ready-to-fill reverse/bind/web-shell payloads + msfvenom builders
@@ -115,6 +116,7 @@ See **[USAGE.md](USAGE.md)** for a full walkthrough.
 | **Forensics / DFIR** | Forensics · Reversing · Data Extractor |
 | **IoT / Hardware** | IoT / ICS / SCADA · Hardware / Physical |
 | **Evasion / Defense** | Evasion & Bypass · Detection |
+| **AI** | AI Assistant — chat · explain · suggest next steps · analyze output (Ollama / OpenAI) |
 | **System** | Install Arsenal |
 
 ---
