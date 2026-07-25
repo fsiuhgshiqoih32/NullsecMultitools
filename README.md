@@ -8,21 +8,22 @@
 
 Recon · password cracking · crypto & cipher breaking · web/API testing · forensics · steganography · OSINT · evasion · payload generation — most of it pure Python with no setup.
 
+[![CI](https://github.com/fsiuhgshiqoih32/NullsecMultitools/actions/workflows/ci.yml/badge.svg)](https://github.com/fsiuhgshiqoih32/NullsecMultitools/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/fsiuhgshiqoih32/NullsecMultitools?label=release&color=2ea043)](https://github.com/fsiuhgshiqoih32/NullsecMultitools/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/fsiuhgshiqoih32/NullsecMultitools/total?label=downloads&color=1f6feb)](https://github.com/fsiuhgshiqoih32/NullsecMultitools/releases)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![License: MIT](https://img.shields.io/github/license/fsiuhgshiqoih32/NullsecMultitools?color=2ea043)](LICENSE)
 ![Modules](https://img.shields.io/badge/modules-37-red)
-![Tools](https://img.shields.io/badge/built--in%20tools-271-orange)
 
 </div>
 
 ```
- ███╗   ██╗██╗   ██╗██╗     ██╗     ███████╗███████╗ ██████╗
-████╗  ██║██║   ██║██║     ██║     ██╔════╝██╔════╝██╔════╝
-██╔██╗ ██║██║   ██║██║     ██║     ███████╗█████╗  ██║
-██║╚██╗██║██║   ██║██║     ██║     ╚════██║██╔══╝  ██║
-██║ ╚████║╚██████╔╝███████╗███████╗███████║███████╗╚██████╗
-╚═╝  ╚═══╝ ╚═════╝ ╚══════╝╚══════╝╚══════╝╚══════╝ ╚═════╝
+                ____
+   ____  __  __/ / /_______  _____
+  / __ \/ / / / / / ___/ _ \/ ___/
+ / / / / /_/ / / (__  )  __/ /__
+/_/ /_/\__,_/_/_/____/\___/\___/
         offensive security framework · authorized use only
 ```
 
