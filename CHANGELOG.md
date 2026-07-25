@@ -3,7 +3,12 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
-## [0.6.1] — 2026-07-25
+## [2.3.5] — 2026-07-25
+
+Version renumbered to reflect the project's maturity (41 modules, 309 tools,
+CI + automated releases). No functional changes from 2.3.3.
+
+## [2.3.3] — 2026-07-25
 
 ### Fixed (found in a 5-pass code scan)
 - **Vigenere breaker** crashed (`max() arg is an empty sequence`) on any ciphertext
@@ -16,7 +21,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
   to take 50 entries; now streams and closes properly.
 - Added cipher edge-case regression tests.
 
-## [0.6.0] — 2026-07-25
+## [2.3.2] — 2026-07-25
 
 ### Added
 - **Proxy Manager** (`P`): load proxies (built-in list or file, 4 formats incl.
@@ -33,7 +38,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
 - Workspaces write to a persistent dir next to the exe instead of the read-only
   bundle, so engagements survive across runs of the packaged build.
 
-## [0.5.1] — 2026-07-25
+## [2.3.1] — 2026-07-25
 
 ### Fixed
 - **Hash calculator no longer truncates** SHA-256/SHA-512 — digests print as full,
@@ -45,7 +50,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
   just crash-free. Backed by a 29-tool correctness sweep (hashes, decoders, ciphers,
   subnet/base/JSON utilities, breach lookup) — all passing.
 
-## [0.5.0] — 2026-07-25
+## [2.3.0] — 2026-07-25
 
 ### Added
 - **1,000,000 most-common passwords** bundled (`wordlists/top-1million-passwords.txt`,
@@ -56,7 +61,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
   `tools/gen_demo.py`.
 - A more descriptive README with a Highlights section.
 
-## [0.4.0] — 2026-07-25
+## [2.2.0] — 2026-07-25
 
 ### Added
 - **Auto-elevate to Administrator** on Windows (one UAC prompt), then **auto-add a
@@ -68,7 +73,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
   timestamp converter, UUID generator, secure password generator, URL dissector,
   text stats + Shannon entropy, and JSON validate/pretty-print. 8 pure-Python tools.
 
-## [0.3.1] — 2026-07-25
+## [2.1.1] — 2026-07-25
 
 ### Changed
 - **AI is faster and clearer**: auto-picks the smallest (fastest) installed model
@@ -78,7 +83,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
 - **UI polish**: module screens now show the module's description, cleaner item
   layout, and a consistent grey footer/prompt across home and every module.
 
-## [0.3.0] — 2026-07-25
+## [2.1.0] — 2026-07-25
 
 ### Added
 - **AI Assistant module** (`A` on the home menu): chat, explain a command/error,
@@ -91,7 +96,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
 - **Auto-build release workflow**: pushing a `v*` tag builds the Windows exe on a
   runner and publishes it as a release automatically.
 
-## [0.2.2] — 2026-07-25
+## [2.0.1] — 2026-07-25
 
 ### Added
 - Logo and three live terminal screenshots in the README.
@@ -109,7 +114,7 @@ This project loosely follows [Semantic Versioning](https://semver.org/).
 - Reverse DNS lookup no longer crashes on a hostname or malformed input (catches
   `OSError`, not just `herror`/`gaierror`).
 
-## [0.2.1] — 2026-07-24
+## [2.0.0] — 2026-07-24
 
 ### Fixed
 - `report()` crash across ~10 modules: the shared `SessionReport` instance was
