@@ -336,6 +336,30 @@ def get_proxy() -> dict | None:
         return None
 
 
+# --- output / report helpers ------------------------------------------------
+
+def output_dir() -> Path:
+    """Return the output/ directory, creating it if needed."""
+    d = resource_path("output")
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def save_json_report(data: dict | list, filename: str) -> Path:
+    """Save *data* as JSON to output/<filename>. Returns the path."""
+    import json as _json
+    path = output_dir() / filename
+    path.write_text(_json.dumps(data, indent=2, default=str), encoding="utf-8")
+    return path
+
+
+def save_md_report(content: str, filename: str) -> Path:
+    """Save *content* as Markdown to output/<filename>. Returns the path."""
+    path = output_dir() / filename
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
 # --- session reporting ------------------------------------------------------
 
 @dataclass

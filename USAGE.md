@@ -169,6 +169,90 @@ If the proxy is disabled or empty, `get_proxy()` returns `None` (direct connecti
 
 ---
 
+## 4d. Shodan Recon (`S`)
+
+Dedicated Shodan API module with persistent API key management and rich
+colorized output for ports, banners, vulnerabilities, OS, and geolocation.
+
+### API key setup
+
+Set the key in one of three ways:
+1. Environment variable: `SHODAN_API_KEY=yourkey`
+2. In-app: `S` → `6` (Set API key) — saved to `data/shodan_config.json`
+3. Interactive prompt on first use (offers to save)
+
+### Features
+
+| Key | Action |
+|-----|--------|
+| `1` | Host lookup — ports, banners, CVEs, OS, geo for an IP |
+| `2` | Search — query with filters (e.g. `apache country:US`) |
+| `3` | Result count — free, no query credits used |
+| `4` | CVE search — find hosts vulnerable to a specific CVE |
+| `5` | Account profile — check remaining credits |
+| `6`–`8` | API key management |
+
+All results can be exported as JSON or Markdown to `output/`.
+
+---
+
+## 4e. Chained Recon Pipeline (`C`)
+
+Automated recon that chains multiple steps without manual re-entry:
+
+1. **Subdomain enumeration** via crt.sh certificate transparency logs
+2. **DNS resolution** of all discovered subdomains (raw UDP, no dig needed)
+3. **Shodan host lookup** for each resolved IP (concurrent, up to 20 IPs)
+4. **CVE extraction** from Shodan vulnerability data
+5. **Structured report** export (JSON + Markdown) to `output/`
+
+### Quick start
+
+```
+C → 1 → Enter domain (e.g. example.com)
+```
+
+The pipeline runs automatically and displays results in rich tables. Export
+when prompted at the end.
+
+Also available standalone: subdomain-only, bulk DNS resolution, and batch
+Shodan lookup for a list of IPs.
+
+---
+
+## 4f. Attack Surface (`T`)
+
+Expanded OSINT and attack surface enumeration tools.
+
+| Key | Action |
+|-----|--------|
+| `1` | **Hidden file / endpoint crawler** — probes 60+ common paths (.env, .git/, admin panels, backup files, swagger, actuator endpoints) concurrently |
+| `2` | **Tech-stack fingerprint** — identifies web technologies (Apache, nginx, WordPress, React, Django, etc.) via headers and body analysis; checks security headers |
+| `3` | **Credential leak check** — checks emails against Have I Been Pwned breach database |
+| `4` | **Directory brute-force** — custom wordlist against a target |
+
+All results can be exported as JSON or Markdown to `output/`.
+
+---
+
+## 4g. Output Directory
+
+All Shodan, Chained Recon, and Attack Surface exports are saved to `output/`:
+
+```
+output/
+  shodan_host_1.2.3.4_20260726_120000.json
+  shodan_search_20260726_120500.json
+  chainrecon_example.com_20260726_121000.md
+  crawl_20260726_121500.json
+  fingerprint_20260726_122000.md
+```
+
+This directory is gitignored. Clean it manually or let it accumulate during
+an engagement.
+
+---
+
 ## 5. Turning on the external tools
 
 Modules like Recon, Brute-force, Vuln Scan, and Tool Catalog drive real programs.
@@ -220,7 +304,9 @@ nullsec/
   data/tools.json      # the tool catalog
   data/state.json      # remembers your recent modules
   data/proxies.txt     # built-in free proxy list (replace with your own)
+  data/shodan_config.json  # Shodan API key (gitignored)
   workspaces/          # saved engagement workspaces (*.json)
+  output/              # scan reports: JSON + Markdown (gitignored)
   tests/test_smoke.py  # wiring checks (python tests/test_smoke.py)
 ```
 

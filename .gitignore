@@ -7,6 +7,7 @@ __pycache__/
 # pyinstaller build artifacts
 build/
 dist/
+dist_*/
 # ignore auto-generated .spec files, but keep our hand-maintained build recipe
 *.spec
 !nullsec.spec
@@ -22,6 +23,14 @@ data/vpn_cache.json
 
 # workspace engagement data
 workspaces/
+workspace_*.md
+workspace_*.html
+
+# scan output / reports
+output/
+
+# Shodan API key config
+data/shodan_config.json
 
 # generated session output
 *_report_*.md

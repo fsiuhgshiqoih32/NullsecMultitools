@@ -33,8 +33,8 @@ from toolkit import (__version__, adattacks, ai, arsenal, bruteforce, catalog,
                      generators, hardware, hashes, installer, interceptor, iot,
                      lolbins, metadata, mobile, network, osint, passwords,
                      payloadenc, postex, recipe, recon, reversing, smb, stego,
-                     proxy, toolbox, vpn, vulnscan, web, wireless, wordlists,
-                     workspace)
+                     proxy, shodan, chainrecon, attacksurface, toolbox, vpn,
+                     vulnscan, web, wireless, wordlists, workspace)
 from toolkit.utils import (IS_WINDOWS, console, detect_tools, get_wsl_distro,
                            probe_tools, render_banner, report, resource_path,
                            wsl_available)
@@ -85,6 +85,9 @@ CATEGORIES = {
     "W": ("Workspace", workspace.MENU, "Named engagements: persist findings, notes, reports"),
     "P": ("Proxy Manager", proxy.MENU, "Load, test, rotate, and export proxies"),
     "V": ("Free VPN", vpn.MENU, "Fetch free VPNGate servers by country, export OpenVPN configs"),
+    "S": ("Shodan Recon", shodan.MENU, "Host lookup, search, CVE scan, API key management"),
+    "C": ("Chained Recon", chainrecon.MENU, "Auto pipeline: subdomains → DNS → Shodan → CVE → report"),
+    "T": ("Attack Surface", attacksurface.MENU, "Hidden file crawl, tech fingerprint, cred leak check"),
 }
 
 # System pseudo-entries (handled specially, not real categories).
@@ -125,7 +128,7 @@ def _cat_dot(key: str) -> str:
 
 # Home layout: (section title, colour, [category keys]).
 GROUPS = [
-    ("RECON / OSINT", "cyan", ["1", "6", "o", "m", "8", "j"]),
+    ("RECON / OSINT", "cyan", ["1", "6", "o", "m", "8", "j", "S", "C", "T"]),
     ("WEB / EXPLOIT", "red", ["5", "p", "h", "7", "9", "v", "l", "X"]),
     ("AD / NETWORK", "red", ["a", "n", "x", "k"]),
     ("DATA / CLOUD", "bright_blue", ["b", "u", "y"]),

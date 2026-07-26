@@ -4,7 +4,7 @@
 
 # nullsec
 
-**A menu-driven offensive-security multitool — 42 modules and 317 built-in tools behind one prompt.**
+**A menu-driven offensive-security multitool — 45 modules and 333 built-in tools behind one prompt.**
 
 Recon · password cracking · crypto & cipher breaking · web/API testing · forensics · steganography · OSINT · evasion · payload generation — most of it pure Python with no setup.
 
@@ -14,7 +14,7 @@ Recon · password cracking · crypto & cipher breaking · web/API testing · for
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
 [![License: MIT](https://img.shields.io/github/license/fsiuhgshiqoih32/NullsecMultitools?color=2ea043)](LICENSE)
-![Modules](https://img.shields.io/badge/modules-42-red)
+![Modules](https://img.shields.io/badge/modules-45-red)
 
 </div>
 
@@ -30,7 +30,7 @@ up automatically once they're installed, **natively or through WSL**. Nothing is
 required to start: missing tools simply grey out their module and the built-in
 scanners/crackers keep working.
 
-- **42 modules · 317 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
+- **45 modules · 333 built-in tools** — including a built-in **AI assistant** (local Ollama or any OpenAI-compatible endpoint)
 - **Auto-install**: missing Python dependencies install themselves on first run; the AI tab can auto-install Ollama + a model
 - **Windows auto-setup**: on launch it elevates (one UAC prompt) and adds a Defender exclusion so the payload data isn't quarantined — the Payload Arsenal just works
 - **2,964** curated tools in the searchable catalog
@@ -78,7 +78,7 @@ and copy. PowerShell shells even get a `-enc` base64 one-liner generated automat
 exclusion so the payload data isn't quarantined, missing Python deps install
 themselves, and the whole thing runs as a single self-contained exe.
 
-**🧰 42 modules of tooling** — from recon, web/API testing, and hash cracking to
+**🧰 45 modules of tooling** — from recon, web/API testing, and hash cracking to
 forensics, steganography, evasion, a Utilities tab, persistent **Workspaces** for
 engagements, and a **Proxy Manager** that routes every module's requests.
 
@@ -133,7 +133,7 @@ See **[USAGE.md](USAGE.md)** for a full walkthrough.
 
 | Group | Modules |
 |---|---|
-| **Recon / OSINT** | Reconnaissance · Network · OSINT & DNS · Metadata · Tool Catalog · Email / Phishing |
+| **Recon / OSINT** | Reconnaissance · Network · OSINT & DNS · Metadata · Tool Catalog · Email / Phishing · **Shodan Recon** · **Chained Recon** · **Attack Surface** |
 | **Web / Exploit** | Web · Payload Forge · HTTP Interceptor · Payload Arsenal · Brute-force · Vuln Scan · LOLBins · Exploit Toolkit |
 | **AD / Network** | AD Attacks · SMB / Shares · Post-Exploitation · Wireless |
 | **Data / Cloud** | Databases · Cloud · Mobile |

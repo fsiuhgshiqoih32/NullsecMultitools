@@ -3,6 +3,16 @@
 All notable changes to nullsec are documented here.
 This project loosely follows [Semantic Versioning](https://semver.org/).
 
+## [2.5.0] — 2026-07-26
+
+### Added
+- **Shodan Recon** (`S`): host lookup, search, CVE scan, and API-key management
+  (key from `SHODAN_API_KEY` or a stored config; free key at shodan.io).
+- **Chained Recon** (`C`): an automated pipeline — subdomains -> DNS -> Shodan ->
+  CVE -> report.
+- **Attack Surface** (`T`): hidden-file crawl, tech fingerprint, and credential-leak
+  checks.
+
 ## [2.4.5] — 2026-07-25
 
 ### Fixed

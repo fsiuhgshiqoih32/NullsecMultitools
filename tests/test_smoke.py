@@ -336,6 +336,92 @@ def test_proxy_stats_and_get_proxy_helper():
     mgr.clear()
 
 
+def test_shodan_menu_is_valid():
+    from toolkit import shodan
+    assert isinstance(shodan.MENU, dict) and shodan.MENU
+    for k, (label, fn) in shodan.MENU.items():
+        assert isinstance(label, str) and label, f"shodan:{k} has no label"
+        assert callable(fn), f"shodan:{k} target is not callable"
+
+
+def test_shodan_key_management():
+    from toolkit import shodan
+    # _load_key should return None or a string (not crash)
+    key = shodan._load_key()
+    assert key is None or isinstance(key, str)
+
+
+def test_chainrecon_menu_is_valid():
+    from toolkit import chainrecon
+    assert isinstance(chainrecon.MENU, dict) and chainrecon.MENU
+    for k, (label, fn) in chainrecon.MENU.items():
+        assert isinstance(label, str) and label, f"chainrecon:{k} has no label"
+        assert callable(fn), f"chainrecon:{k} target is not callable"
+
+
+def test_chainrecon_dns_resolve():
+    from toolkit import chainrecon
+    # Should return a list (possibly empty) without crashing
+    ips = chainrecon._dns_a("example.com")
+    assert isinstance(ips, list)
+
+
+def test_chainrecon_results_to_markdown():
+    from toolkit import chainrecon
+    results = {
+        "domain": "test.com",
+        "timestamp": "2026-01-01T00:00:00",
+        "subdomains": ["a.test.com", "b.test.com"],
+        "resolved": {"a.test.com": ["1.2.3.4"]},
+        "shodan": {"1.2.3.4": {"org": "Test", "ports": [80, 443],
+                                "vulns": ["CVE-2021-1234"], "country": "US",
+                                "os": "Linux"}},
+        "vulns": [{"ip": "1.2.3.4", "cve": "CVE-2021-1234"}],
+        "errors": [],
+    }
+    md = chainrecon._results_to_markdown(results)
+    assert "test.com" in md and "CVE-2021-1234" in md and "a.test.com" in md
+
+
+def test_attacksurface_menu_is_valid():
+    from toolkit import attacksurface
+    assert isinstance(attacksurface.MENU, dict) and attacksurface.MENU
+    for k, (label, fn) in attacksurface.MENU.items():
+        assert isinstance(label, str) and label, f"attacksurface:{k} has no label"
+        assert callable(fn), f"attacksurface:{k} target is not callable"
+
+
+def test_attacksurface_hidden_paths_exist():
+    from toolkit import attacksurface
+    assert len(attacksurface._HIDDEN_PATHS) > 30
+    assert ".env" in attacksurface._HIDDEN_PATHS
+    assert "robots.txt" in attacksurface._HIDDEN_PATHS
+
+
+def test_attacksurface_tech_signatures_exist():
+    from toolkit import attacksurface
+    assert len(attacksurface._TECH_SIGNATURES) > 10
+    names = [s["name"] for s in attacksurface._TECH_SIGNATURES]
+    assert "Apache" in names and "nginx" in names and "WordPress" in names
+
+
+def test_output_helpers():
+    from toolkit.utils import output_dir, save_json_report, save_md_report
+    d = output_dir()
+    assert d.is_dir()
+    # Save JSON
+    path = save_json_report({"test": True}, "_test_output.json")
+    assert path.is_file()
+    import json
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["test"] is True
+    path.unlink()
+    # Save Markdown
+    path = save_md_report("# Test\n", "_test_output.md")
+    assert path.is_file() and "Test" in path.read_text(encoding="utf-8")
+    path.unlink()
+
+
 if __name__ == "__main__":
     # Allow running without pytest:  python tests/test_smoke.py
     tests = [v for k, v in sorted(globals().items())

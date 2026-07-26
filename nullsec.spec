@@ -17,6 +17,7 @@ TOOLKIT_MODULES = [
     'toolkit.proxy', 'toolkit.reversing', 'toolkit.smb', 'toolkit.stego',
     'toolkit.toolbox', 'toolkit.vpn', 'toolkit.vulnscan', 'toolkit.web',
     'toolkit.wireless', 'toolkit.wordlists', 'toolkit.workspace',
+    'toolkit.shodan', 'toolkit.chainrecon', 'toolkit.attacksurface',
 ]
 
 # Optional libraries the toolkit imports lazily (via need_lib / importlib), so
